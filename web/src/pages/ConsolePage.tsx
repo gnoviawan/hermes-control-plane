@@ -3,8 +3,9 @@ import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
 import { PageHeader } from '../components/PageHeader'
 import { useProfileStore } from '../store/profileStore'
+import type { RunRecord } from '../types'
 
-const statusColors: Record<string, string> = {
+const statusColors: Record<RunRecord['status'], string> = {
   queued: 'gold',
   running: 'blue',
   completed: 'green',
@@ -12,11 +13,20 @@ const statusColors: Record<string, string> = {
   stopped: 'default',
 }
 
+const getLatestRun = (runs: RunRecord[]): RunRecord | undefined =>
+  runs.reduce<RunRecord | undefined>((latest, run) => {
+    if (!latest) {
+      return run
+    }
+    return Date.parse(run.startedAt) > Date.parse(latest.startedAt) ? run : latest
+  }, undefined)
+
 export function ConsolePage() {
   const { selectedProfileId } = useProfileStore()
   const profileId = selectedProfileId ?? 'default'
   const { data, isLoading, isMock, error, refresh } = useApiQuery(() => apiClient.getRuns(profileId), [profileId])
   const runs = data ?? []
+  const latestRun = getLatestRun(runs)
 
   return (
     <div className="page-stack">
@@ -42,7 +52,7 @@ export function ConsolePage() {
                       title={
                         <Space wrap>
                           <Typography.Text strong>{run.id}</Typography.Text>
-                          <Tag color={statusColors[run.status] ?? 'default'}>{run.status}</Tag>
+                          <Tag color={statusColors[run.status]}>{run.status}</Tag>
                           <Typography.Text type="secondary">{run.provider} · {run.model}</Typography.Text>
                         </Space>
                       }
@@ -68,11 +78,11 @@ export function ConsolePage() {
             <Card className="glass-panel qwen-section-card" title="Stream contract">
               {isLoading ? (
                 <Skeleton active paragraph={{ rows: 3 }} title={false} />
-              ) : runs[0] ? (
+              ) : latestRun ? (
                 <Space direction="vertical" size={8} style={{ width: '100%' }}>
                   <Typography.Text strong>Latest run</Typography.Text>
-                  <Typography.Text code>{runs[0].streamUrl}</Typography.Text>
-                  <Typography.Text code>{runs[0].eventsUrl}</Typography.Text>
+                  <Typography.Text code>{latestRun.streamUrl}</Typography.Text>
+                  <Typography.Text code>{latestRun.eventsUrl}</Typography.Text>
                   <Typography.Text type="secondary">
                     SSE-first contract is live for reconnectable run snapshots while richer live console streaming lands in later slices.
                   </Typography.Text>

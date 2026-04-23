@@ -238,20 +238,25 @@ const normalizeLogs = (payload: BackendLogsResponse): LogEntry[] =>
     message: line,
   }))
 
+const compareRunsByStartedAtDesc = (left: RunRecord, right: RunRecord): number =>
+  Date.parse(right.startedAt) - Date.parse(left.startedAt)
+
 const normalizeRuns = (payload: BackendRunsResponse): RunRecord[] =>
-  payload.runs.map((run) => ({
-    id: run.id,
-    profileId: run.agent_id,
-    sessionId: run.session_id ?? undefined,
-    status: run.status,
-    startedAt: run.started_at,
-    endedAt: run.ended_at ?? undefined,
-    model: run.current_model ?? 'Unassigned',
-    provider: run.current_provider ?? 'Unassigned',
-    summary: run.summary ?? 'No run summary available.',
-    streamUrl: run.stream_url,
-    eventsUrl: run.events_url,
-  }))
+  payload.runs
+    .map((run) => ({
+      id: run.id,
+      profileId: run.agent_id,
+      sessionId: run.session_id ?? undefined,
+      status: run.status,
+      startedAt: run.started_at,
+      endedAt: run.ended_at ?? undefined,
+      model: run.current_model ?? 'Unassigned',
+      provider: run.current_provider ?? 'Unassigned',
+      summary: run.summary ?? 'No run summary available.',
+      streamUrl: run.stream_url,
+      eventsUrl: run.events_url,
+    }))
+    .sort(compareRunsByStartedAtDesc)
 
 async function withFallback<T>(run: () => Promise<T>, fallback: () => T): Promise<ApiResult<T>> {
   try {
@@ -436,7 +441,11 @@ export const apiClient = {
     withFallback(async () => {
       const payload = await fetchJson<BackendRunsResponse>(`/agents/${encodeURIComponent(profileId)}/runs`)
       return normalizeRuns(payload)
-    }, () => structuredClone(mockRuns).filter((run) => run.profileId === profileId || profileId === 'default')),
+    }, () =>
+      structuredClone(mockRuns)
+        .filter((run) => run.profileId === profileId)
+        .sort(compareRunsByStartedAtDesc),
+    ),
 
   getCronJobs: async (): Promise<ApiResult<CronJob[]>> =>
     withFallback(async () => {

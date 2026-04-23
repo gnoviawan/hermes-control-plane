@@ -1,6 +1,17 @@
+import json
+
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.run_service import RunService
+
+
+@pytest.fixture(autouse=True)
+def isolated_run_service(monkeypatch) -> RunService:
+    service = RunService()
+    monkeypatch.setattr('app.main.run_service', service)
+    return service
 
 
 client = TestClient(app)
@@ -40,8 +51,8 @@ def test_run_lifecycle_endpoints_create_list_get_and_stop(monkeypatch) -> None:
 
     list_response = client.get('/api/agents/default/runs')
     assert list_response.status_code == 200
-    assert list_response.json()['total'] >= 1
-    assert any(run['id'] == run_id for run in list_response.json()['runs'])
+    assert list_response.json()['total'] == 1
+    assert [run['id'] for run in list_response.json()['runs']] == [run_id]
 
     detail_response = client.get(f'/api/agents/default/runs/{run_id}')
     assert detail_response.status_code == 200
@@ -74,5 +85,8 @@ def test_run_events_endpoint_exposes_sse_contract(monkeypatch) -> None:
     body = response.text
     assert 'event: run.snapshot' in body
     assert f'id: {run_id}:1' in body
-    assert '"status": "queued"' in body
-    assert '"agent_id": "default"' in body
+
+    data_lines = [line.removeprefix('data: ') for line in body.splitlines() if line.startswith('data: ')]
+    payload = json.loads('\n'.join(data_lines))
+    assert payload['status'] == 'queued'
+    assert payload['agent_id'] == 'default'
