@@ -13,6 +13,59 @@ class HealthResponse(BaseModel):
     hermes_bin_exists: bool
 
 
+class AdapterDescriptor(BaseModel):
+    kind: str
+    hermes_home: str
+    hermes_bin: str
+    hermes_bin_exists: bool
+
+
+class SystemHealthResponse(BaseModel):
+    status: Literal["ok"]
+    service: str
+    api_version: str
+    app_version: str
+    adapter: AdapterDescriptor
+
+
+class SystemVersionResponse(BaseModel):
+    service: str
+    api_version: str
+    app_version: str
+
+
+class AgentDefaults(BaseModel):
+    model: str | None = None
+    provider: str | None = None
+
+
+class AgentFiles(BaseModel):
+    has_env_file: bool = False
+    has_soul_file: bool = False
+
+
+class AgentRuntimeHints(BaseModel):
+    gateway_state: str | None = None
+    skill_count: int = 0
+
+
+class AgentSummary(BaseModel):
+    id: str
+    name: str
+    path: str
+    is_active: bool = False
+    exists: bool = True
+    defaults: AgentDefaults
+    files: AgentFiles
+    runtime_hints: AgentRuntimeHints
+
+
+class AgentsResponse(BaseModel):
+    agents: list[AgentSummary]
+    active_agent_id: str
+    total: int
+
+
 class CommandResult(BaseModel):
     command: list[str]
     exit_code: int

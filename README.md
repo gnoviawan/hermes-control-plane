@@ -12,6 +12,20 @@ The backend wraps the Hermes CLI and reads from `HERMES_HOME` to provide
 REST endpoints for status, profiles, sessions, skills, cron, logs, and config.
 It does **not** modify Hermes source code.
 
+## Dashboard API contract foundation
+
+The control-plane backend now exposes an initial stable dashboard adapter surface:
+
+- `GET /api/system/health`
+- `GET /api/system/version`
+- `GET /api/agents`
+- `GET /api/agents/{agent_id}`
+
+These routes are the first step toward the architecture-spec split between
+agent-scoped and system-scoped resources. Legacy Phase 1 routes such as
+`/api/health` and `/api/profiles` remain available for compatibility while the
+frontend migrates incrementally.
+
 ## Development
 
 ### Frontend

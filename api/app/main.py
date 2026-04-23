@@ -9,6 +9,11 @@ from fastapi.responses import FileResponse
 
 from app.core.settings import settings
 from app.models import (
+    AgentDefaults,
+    AgentFiles,
+    AgentRuntimeHints,
+    AgentsResponse,
+    AgentSummary,
     ConfigSummary,
     CreateProfileRequest,
     HealthResponse,
@@ -17,12 +22,15 @@ from app.models import (
     SkillBroadcastResult,
     SkillsResponse,
     StatusResponse,
+    SystemHealthResponse,
+    SystemVersionResponse,
 )
 from app.services.hermes_adapter import (
     active_profile_name,
     broadcast_skill_configuration,
     config_summary,
     create_profile,
+    ensure_profile_exists,
     list_cron_jobs,
     list_sessions,
     list_skills,
@@ -32,7 +40,34 @@ from app.services.hermes_adapter import (
     status_payload,
 )
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(title=settings.app_name, version=settings.app_version)
+
+
+def adapter_descriptor() -> dict[str, str | bool]:
+    return {
+        "kind": "hermes-dashboard-api",
+        "hermes_home": str(settings.hermes_home),
+        "hermes_bin": str(settings.hermes_bin),
+        "hermes_bin_exists": settings.hermes_bin.exists(),
+    }
+
+
+def agent_contract(summary: AgentSummary | object) -> AgentSummary:
+    if isinstance(summary, AgentSummary):
+        return summary
+    if not hasattr(summary, "name"):
+        raise TypeError("Expected profile summary-like object")
+    return AgentSummary(
+        id=summary.name,
+        name=summary.name,
+        path=summary.path,
+        is_active=summary.is_active,
+        exists=summary.exists,
+        defaults=AgentDefaults(model=summary.model, provider=summary.provider),
+        files=AgentFiles(has_env_file=summary.has_env_file, has_soul_file=summary.has_soul_file),
+        runtime_hints=AgentRuntimeHints(gateway_state=summary.gateway_state, skill_count=summary.skill_count),
+    )
+
 
 # ── API routes ────────────────────────────────────────────────────────────
 
@@ -47,9 +82,43 @@ def get_health() -> HealthResponse:
     )
 
 
+@app.get("/api/system/health", response_model=SystemHealthResponse, tags=["system"])
+def get_system_health() -> SystemHealthResponse:
+    return SystemHealthResponse(
+        status="ok",
+        service=settings.app_name,
+        api_version=settings.dashboard_api_version,
+        app_version=settings.app_version,
+        adapter=adapter_descriptor(),
+    )
+
+
+@app.get("/api/system/version", response_model=SystemVersionResponse, tags=["system"])
+def get_system_version() -> SystemVersionResponse:
+    return SystemVersionResponse(
+        service=settings.app_name,
+        api_version=settings.dashboard_api_version,
+        app_version=settings.app_version,
+    )
+
+
 @app.get("/api/status", response_model=StatusResponse, tags=["system"])
 def get_status() -> StatusResponse:
     return StatusResponse(**status_payload())
+
+
+@app.get("/api/agents", response_model=AgentsResponse, tags=["agents"])
+def get_agents() -> AgentsResponse:
+    active = active_profile_name()
+    agents = [agent_contract(profile_summary(context, active_profile=active)) for context in profile_contexts()]
+    return AgentsResponse(agents=agents, active_agent_id=active, total=len(agents))
+
+
+@app.get("/api/agents/{agent_id}", response_model=AgentSummary, tags=["agents"])
+def get_agent(agent_id: str) -> AgentSummary:
+    active = active_profile_name()
+    context = ensure_profile_exists(agent_id)
+    return agent_contract(profile_summary(context, active_profile=active))
 
 
 @app.get("/api/profiles", tags=["profiles"])
