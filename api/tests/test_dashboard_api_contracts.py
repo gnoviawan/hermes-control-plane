@@ -16,13 +16,13 @@ def test_system_health_contract_is_available() -> None:
     payload = response.json()
     assert payload == {
         'status': 'ok',
-        'service': 'Hermes Control Plane API',
-        'api_version': 'v1alpha1',
-        'app_version': '0.1.0',
+        'service': settings.app_name,
+        'api_version': settings.dashboard_api_version,
+        'app_version': settings.app_version,
         'adapter': {
             'kind': 'hermes-dashboard-api',
-            'hermes_home': '/opt/data',
-            'hermes_bin': '/opt/hermes/.venv/bin/hermes',
+            'hermes_home': str(settings.hermes_home),
+            'hermes_bin': str(settings.hermes_bin),
             'hermes_bin_exists': settings.hermes_bin.exists(),
         },
     }
@@ -34,9 +34,9 @@ def test_system_version_contract_is_available() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload == {
-        'service': 'Hermes Control Plane API',
-        'api_version': 'v1alpha1',
-        'app_version': '0.1.0',
+        'service': settings.app_name,
+        'api_version': settings.dashboard_api_version,
+        'app_version': settings.app_version,
     }
 
 

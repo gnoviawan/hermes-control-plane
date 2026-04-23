@@ -19,7 +19,7 @@ The control-plane backend now exposes an initial stable dashboard adapter surfac
 - `GET /api/system/health`
 - `GET /api/system/version`
 - `GET /api/agents`
-- `GET /api/agents/{agentId}`
+- `GET /api/agents/{agent_id}`
 
 These routes are the first step toward the architecture-spec split between
 agent-scoped and system-scoped resources. Legacy Phase 1 routes such as
