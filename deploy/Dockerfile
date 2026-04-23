@@ -6,9 +6,12 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-# Final runtime: use Hermes image directly so its venv/binary stays valid
+# Final runtime: use Hermes image directly so Hermes CLI + venv stay valid
 FROM nousresearch/hermes-agent:v2026.4.13
 WORKDIR /app
+
+# Base image likely has ENTRYPOINT ["hermes"]. Clear it so this image runs our API server.
+ENTRYPOINT []
 
 # Install backend into Hermes runtime environment
 COPY api/pyproject.toml ./pyproject.toml

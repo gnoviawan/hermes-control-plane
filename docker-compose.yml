@@ -3,7 +3,8 @@ services:
     image: nousresearch/hermes-agent:v2026.4.13
     container_name: hermes-control-plane-hermes
     restart: unless-stopped
-    command: /bin/sh -lc "sleep infinity"
+    entrypoint: ["/bin/sh", "-lc"]
+    command: "sleep infinity"
     volumes:
       - hermes_data:/opt/data
     networks:
