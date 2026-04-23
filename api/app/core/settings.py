@@ -8,7 +8,9 @@ from pathlib import Path
 @dataclass(frozen=True)
 class Settings:
     app_name: str = "Hermes Control Plane API"
+    app_version: str = "0.1.0"
     api_prefix: str = "/api"
+    dashboard_api_version: str = "v1alpha1"
     hermes_home: Path = Path(os.getenv("HERMES_HOME", "/opt/data")).expanduser()
     hermes_bin: Path = Path(os.getenv("HERMES_BIN", "/opt/hermes/.venv/bin/hermes")).expanduser()
     hermes_root: Path = Path(
