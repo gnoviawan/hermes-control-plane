@@ -6,6 +6,7 @@ import { CronJobsPage } from './pages/CronJobsPage'
 import { LogsPage } from './pages/LogsPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProfilesPage } from './pages/ProfilesPage'
+import { ProvidersPage } from './pages/ProvidersPage'
 import { SessionsPage } from './pages/SessionsPage'
 import { SkillsPage } from './pages/SkillsPage'
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/skills" element={<SkillsPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/config" element={<ConfigPage />} />
+        <Route path="/providers-models" element={<ProvidersPage />} />
         <Route path="/cron-jobs" element={<CronJobsPage />} />
         <Route path="/logs" element={<LogsPage />} />
       </Route>

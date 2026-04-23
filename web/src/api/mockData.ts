@@ -2,8 +2,11 @@ import type {
   AgentConfigRecord,
   CronJob,
   LogEntry,
+  ModelCatalogRecord,
   OverviewResponse,
   Profile,
+  ProviderCatalogRecord,
+  ProviderRoutingRecord,
   RunRecord,
   SessionRecord,
   Skill,
@@ -242,6 +245,35 @@ export const mockAgentConfig: AgentConfigRecord = {
     'Provider credentials and fallback chains remain read-only in Config v1.',
     'Only personality, model selection, and runtime toggles are writable in this slice.',
   ],
+}
+
+export const mockProviders: ProviderCatalogRecord[] = [
+  {
+    name: 'custom',
+    config: { api_key: '***redacted***', base_url: 'https://providers.gnoviawan.com/v1' },
+    hasCredentials: true,
+    source: 'config',
+  },
+  {
+    name: 'backup',
+    config: { api_key: '***redacted***', base_url: 'https://backup.example/v1' },
+    hasCredentials: true,
+    source: 'config',
+  },
+]
+
+export const mockModels: ModelCatalogRecord[] = [
+  { id: 'gpt-5.4', provider: 'custom', source: 'config' },
+  { id: 'gpt-5-mini', provider: 'custom', source: 'config' },
+  { id: 'glm-5.1', provider: 'backup', source: 'config' },
+]
+
+export const mockProviderRouting: ProviderRoutingRecord = {
+  defaultProvider: 'custom',
+  defaultModel: 'gpt-5.4',
+  fallbackProviders: ['backup'],
+  effectiveProviderCount: 2,
+  writeRestrictions: ['Provider credentials remain redacted in provider routing views.'],
 }
 
 export const mockLogs: LogEntry[] = [

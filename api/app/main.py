@@ -24,6 +24,10 @@ from app.models import (
     CreateProfileRequest,
     HealthResponse,
     LogEntry,
+    ModelCatalogResponse,
+    ProviderCatalogResponse,
+    ProviderRoutingPatchRequest,
+    ProviderRoutingResponse,
     RunCreateRequest,
     RunSummary,
     RunsResponse,
@@ -51,6 +55,7 @@ from app.services.hermes_adapter import (
     status_payload,
 )
 from app.services.config_service import config_service
+from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
 from app.services.session_service import session_service
@@ -113,6 +118,26 @@ def get_system_version() -> SystemVersionResponse:
         api_version=settings.dashboard_api_version,
         app_version=settings.app_version,
     )
+
+
+@app.get('/api/system/providers', response_model=ProviderCatalogResponse, tags=['system'])
+def get_system_providers() -> ProviderCatalogResponse:
+    return provider_service.list_providers()
+
+
+@app.get('/api/system/models', response_model=ModelCatalogResponse, tags=['system'])
+def get_system_models() -> ModelCatalogResponse:
+    return provider_service.list_models()
+
+
+@app.get('/api/system/provider-routing', response_model=ProviderRoutingResponse, tags=['system'])
+def get_system_provider_routing() -> ProviderRoutingResponse:
+    return provider_service.get_routing()
+
+
+@app.patch('/api/system/provider-routing', response_model=ProviderRoutingResponse, tags=['system'])
+def patch_system_provider_routing(payload: ProviderRoutingPatchRequest) -> ProviderRoutingResponse:
+    return provider_service.patch_routing(payload.model_dump(exclude_none=True))
 
 
 @app.get('/api/status', response_model=StatusResponse, tags=['system'])
