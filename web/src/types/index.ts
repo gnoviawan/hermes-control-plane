@@ -1,0 +1,100 @@
+export type HealthState = 'healthy' | 'warning' | 'error' | 'idle'
+
+export interface OverviewMetric {
+  key: string
+  label: string
+  value: number | string
+  helper: string
+  status: HealthState
+}
+
+export interface ActivityItem {
+  title: string
+  detail: string
+  timestamp: string
+  status: HealthState
+}
+
+export interface SystemAlert {
+  title: string
+  detail: string
+  severity: 'info' | 'warning' | 'error'
+}
+
+export interface OverviewResponse {
+  metrics: OverviewMetric[]
+  alerts: SystemAlert[]
+  activity: ActivityItem[]
+}
+
+export interface Profile {
+  id: string
+  name: string
+  path: string
+  gatewayState: 'online' | 'offline' | 'degraded'
+  isActive: boolean
+  skillsEnabled: number
+  skillCount: number
+  sessions: number
+  lastSync: string
+  description: string
+}
+
+export interface CreateProfilePayload {
+  name: string
+  cloneFrom?: string
+  cloneAll: boolean
+  description?: string
+}
+
+export interface Skill {
+  id: string
+  name: string
+  description: string
+  category: string
+  enabledProfiles: string[]
+  updatedAt: string
+}
+
+export interface ToggleSkillPayload {
+  enabled: boolean
+}
+
+export interface SkillBroadcastPayload {
+  sourceProfileId: string
+  targetProfileIds: string[]
+}
+
+export interface SessionRecord {
+  id: string
+  profileId: string
+  title: string
+  status: 'running' | 'queued' | 'complete' | 'failed'
+  startedAt: string
+  updatedAt: string
+  agent: string
+}
+
+export interface CronJob {
+  id: string
+  name: string
+  schedule: string
+  profileId: string
+  enabled: boolean
+  lastRun: string
+  nextRun: string
+}
+
+export interface LogEntry {
+  id: string
+  timestamp: string
+  level: 'INFO' | 'WARN' | 'ERROR'
+  source: string
+  message: string
+}
+
+export interface ApiResult<T> {
+  data: T
+  mock: boolean
+  error?: string
+}

@@ -1,0 +1,268 @@
+:root {
+  color: #e2e8f0;
+  background: #020617;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, rgba(124, 58, 237, 0.22), transparent 25%),
+    linear-gradient(180deg, #0f172a 0%, #020617 100%);
+}
+
+a {
+  color: inherit;
+}
+
+.hermes-shell {
+  min-height: 100vh;
+}
+
+.hermes-sider {
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.92) !important;
+  backdrop-filter: blur(18px);
+}
+
+.hermes-logo {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 20px 18px 14px;
+}
+
+.hermes-logo-mark {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 18px 48px rgba(37, 99, 235, 0.22);
+}
+
+.hermes-logo-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hermes-logo-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.hermes-logo-subtitle {
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+.hermes-menu {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+
+.hermes-menu .ant-menu-item-group-title {
+  color: #64748b !important;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hermes-layout {
+  background: transparent !important;
+}
+
+.hermes-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 28px !important;
+  background: rgba(2, 6, 23, 0.72) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.hermes-header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hermes-header-title h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #f8fafc;
+}
+
+.hermes-header-title span {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.hermes-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hermes-content {
+  padding: 24px;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-header-copy h2 {
+  margin: 0;
+  color: #f8fafc;
+}
+
+.page-header-copy p {
+  margin: 6px 0 0;
+  color: #94a3b8;
+}
+
+.metric-card .ant-statistic-content,
+.metric-card .ant-statistic-title {
+  color: inherit !important;
+}
+
+.metric-card {
+  min-height: 132px;
+}
+
+.data-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ant-layout-sider-trigger {
+  background: rgba(15, 23, 42, 0.98) !important;
+}
+
+.ant-card,
+.ant-table-wrapper,
+.ant-list,
+.ant-descriptions,
+.ant-form,
+.ant-alert,
+.ant-select-selector,
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker,
+.ant-btn,
+.ant-tabs-nav,
+.ant-segmented,
+.ant-tag,
+.ant-collapse,
+.ant-empty {
+  border-radius: 12px;
+}
+
+.ant-card,
+.ant-table,
+.ant-list,
+.ant-descriptions-view,
+.ant-collapse {
+  background: rgba(15, 23, 42, 0.72) !important;
+}
+
+.ant-table-thead > tr > th {
+  background: rgba(30, 41, 59, 0.95) !important;
+}
+
+.ant-table-tbody > tr > td {
+  background: transparent !important;
+}
+
+.ant-table-row:hover > td {
+  background: rgba(30, 41, 59, 0.65) !important;
+}
+
+.ant-card-head,
+.ant-card-body,
+.ant-descriptions-item-label,
+.ant-descriptions-item-content,
+.ant-list-item,
+.ant-tabs-tab,
+.ant-table,
+.ant-form-item-label > label,
+.ant-statistic,
+.ant-typography,
+.ant-empty-description {
+  color: #e2e8f0 !important;
+}
+
+.ant-layout-header,
+.ant-layout-content,
+.ant-layout {
+  background: transparent !important;
+}
+
+.ant-menu-dark,
+.ant-menu-dark .ant-menu-sub,
+.ant-menu-dark > .ant-menu {
+  background: transparent !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.32), rgba(37, 99, 235, 0.2)) !important;
+}
+
+.ant-tag {
+  border: none;
+}
+
+@media (max-width: 992px) {
+  .hermes-header,
+  .hermes-content {
+    padding-inline: 16px !important;
+  }
+}
