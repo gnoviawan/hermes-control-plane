@@ -3,10 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from fastapi import HTTPException
-
 from app.models import AgentRuntimeSummary, ProfileSummary, SessionSummary
-from app.services.hermes_adapter import HermesContext, active_profile_name, ensure_profile_exists, list_sessions, profile_contexts, profile_summary
+from app.services.hermes_adapter import (
+    HermesContext,
+    active_profile_name,
+    ensure_profile_exists,
+    list_sessions,
+    profile_contexts,
+    profile_summary,
+)
 from app.utils import load_yaml_file
 
 
@@ -86,10 +91,10 @@ class RuntimeRegistry:
             return 'missing'
         if active_run_count > 0 or session_count > 0 or summary.is_active:
             return 'active'
-        if summary.gateway_state == 'online':
-            return 'active'
         if summary.gateway_state in {'offline', 'error'}:
             return 'idle'
+        if summary.gateway_state == 'online':
+            return 'active'
         return 'degraded'
 
 
