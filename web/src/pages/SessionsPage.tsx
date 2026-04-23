@@ -1,4 +1,4 @@
-import { Card, Space, Table, Tag, Typography } from 'antd'
+import { Card, Col, Row, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
@@ -32,6 +32,9 @@ const columns: ColumnsType<SessionRecord> = [
 
 export function SessionsPage() {
   const { data, isLoading, isMock, error, refresh } = useApiQuery(apiClient.getSessions, [])
+  const runningCount = (data ?? []).filter((session) => session.status === 'running').length
+  const queuedCount = (data ?? []).filter((session) => session.status === 'queued').length
+  const failedCount = (data ?? []).filter((session) => session.status === 'failed').length
 
   return (
     <div className="page-stack">
@@ -42,7 +45,29 @@ export function SessionsPage() {
         error={error}
         onRefresh={refresh}
       />
-      <Card className="glass-panel" title="Sessions explorer">
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Active sessions</span>
+            <Typography.Title level={3}>{runningCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Queued</span>
+            <Typography.Title level={3}>{queuedCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Failed</span>
+            <Typography.Title level={3}>{failedCount}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="glass-panel qwen-section-card" title="Sessions explorer">
         <Table rowKey="id" loading={isLoading} dataSource={data ?? []} columns={columns} pagination={false} />
       </Card>
     </div>

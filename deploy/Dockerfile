@@ -6,23 +6,21 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-# Copy a real Hermes runtime into the dashboard image
-FROM nousresearch/hermes-agent:v2026.4.13 AS hermes_runtime
-
-# Build backend + serve
-FROM python:3.13-slim
+# Final runtime: use Hermes image directly so its bundled CLI + venv remain valid
+FROM nousresearch/hermes-agent:v2026.4.13
 WORKDIR /app
 
-# Install backend
+# Install backend into Hermes runtime environment
 COPY api/pyproject.toml ./pyproject.toml
 COPY api/app ./app
-RUN pip install --no-cache-dir -e .
+RUN /opt/hermes/.venv/bin/pip install --no-cache-dir -e .
 
 # Copy frontend build
 COPY --from=frontend /app/web/dist /app/static
 
-# Copy Hermes runtime from the standalone Hermes image
-COPY --from=hermes_runtime /opt/hermes /opt/hermes
+# The base image defines ENTRYPOINT ["hermes"]. Clear it so the dashboard
+# container starts uvicorn directly instead of treating it as a Hermes subcommand.
+ENTRYPOINT []
 
 # Runtime user matches host UID/GID
 ARG WANTED_UID=10000
@@ -36,4 +34,4 @@ ENV STATIC_DIR=/app/static
 ENV HERMES_HOME=/opt/data
 ENV HERMES_BIN=/opt/hermes/.venv/bin/hermes
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/opt/hermes/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

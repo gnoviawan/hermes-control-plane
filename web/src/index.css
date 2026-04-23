@@ -1,7 +1,7 @@
 :root {
-  color: #e2e8f0;
-  background: #020617;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1a1716;
+  background: #f9f8f4;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,9 +21,7 @@ body,
 
 body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(124, 58, 237, 0.22), transparent 25%),
-    linear-gradient(180deg, #0f172a 0%, #020617 100%);
+  background: #f9f8f4;
 }
 
 a {
@@ -32,49 +30,154 @@ a {
 
 .hermes-shell {
   min-height: 100vh;
+  background: #f9f8f4 !important;
+}
+
+.hermes-topbar {
+  height: 56px;
+  padding: 0 28px !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f9f8f4 !important;
+  border-bottom: 1px solid rgba(26, 23, 22, 0.06);
+}
+
+.hermes-topbar-brand,
+.hermes-topbar-actions {
+  display: flex;
+  align-items: center;
+}
+
+.hermes-topbar-actions {
+  gap: 0 !important;
+}
+
+.hermes-logo-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hermes-logo-image {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.hermes-logo-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.hermes-logo-wordmark-main {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1716;
+  line-height: 1.2;
+}
+
+.hermes-logo-wordmark-subtitle {
+  font-size: 11px;
+  color: rgba(26, 23, 22, 0.4);
+  line-height: 1.2;
+}
+
+.hermes-logo-divider {
+  width: 16px;
+  height: 1px;
+  transform: rotate(90deg);
+  background: rgba(26, 23, 22, 0.12);
+}
+
+.hermes-logo-wordmark-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(26, 23, 22, 0.45);
+}
+
+.hermes-topbar-link {
+  font-size: 13px;
+  color: rgba(26, 23, 22, 0.45) !important;
+}
+
+.hermes-topbar-divider {
+  width: 1px;
+  height: 16px;
+  margin: 0 12px;
+  background: rgba(26, 23, 22, 0.08);
+}
+
+.hermes-topbar-status {
+  color: rgba(26, 23, 22, 0.65) !important;
+  font-size: 13px;
+}
+
+.hermes-main-layout,
+.hermes-layout {
+  background: #f9f8f4 !important;
 }
 
 .hermes-sider {
-  border-right: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(15, 23, 42, 0.92) !important;
-  backdrop-filter: blur(18px);
+  background: #f9f8f4 !important;
+  border-right: 1px solid rgba(26, 23, 22, 0.06);
+  padding: 0 16px;
 }
 
-.hermes-logo {
+.hermes-agent-scoped-section {
+  margin-top: 16px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(43, 18, 0, 0.02);
+  border: 1px solid rgba(26, 23, 22, 0.06);
+}
+
+.hermes-agent-panel {
+  margin: 0 0 4px;
+  padding: 8px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+}
+
+.hermes-agent-panel-header {
   display: flex;
-  gap: 12px;
   align-items: center;
-  padding: 20px 18px 14px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.hermes-logo-mark {
+.hermes-agent-panel-label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(26, 23, 22, 0.55);
+}
+
+.hermes-agent-panel-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
   display: inline-flex;
-  width: 40px;
-  height: 40px;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed, #2563eb);
-  color: white;
-  font-weight: 700;
-  box-shadow: 0 18px 48px rgba(37, 99, 235, 0.22);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(26, 23, 22, 0.55);
+  background: rgba(26, 23, 22, 0.06);
 }
 
-.hermes-logo-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.hermes-agent-selector {
+  width: 100%;
 }
 
-.hermes-logo-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.hermes-logo-subtitle {
-  font-size: 0.76rem;
-  color: #94a3b8;
+.hermes-agent-panel-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: rgba(26, 23, 22, 0.45) !important;
 }
 
 .hermes-menu {
@@ -82,64 +185,119 @@ a {
   border-inline-end: none !important;
 }
 
-.hermes-menu .ant-menu-item-group-title {
-  color: #64748b !important;
-  font-size: 0.74rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.hermes-menu .ant-menu-submenu-title {
+  padding-left: 8px !important;
+  color: rgba(26, 23, 22, 0.3) !important;
+  font-size: 12px !important;
+  font-weight: 600;
 }
 
-.hermes-layout {
-  background: transparent !important;
+.hermes-menu .ant-menu-submenu-arrow {
+  display: none;
 }
 
-.hermes-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 28px !important;
-  background: rgba(2, 6, 23, 0.72) !important;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  backdrop-filter: blur(18px);
+.hermes-menu .ant-menu-item,
+.hermes-menu .ant-menu-sub .ant-menu-item {
+  padding-left: 8px !important;
+  margin-inline: 0 !important;
+  width: 100%;
 }
 
-.hermes-header-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.hermes-menu .ant-menu-item-selected {
+  background: rgba(43, 18, 0, 0.08) !important;
+  color: inherit !important;
 }
 
-.hermes-header-title h1 {
-  margin: 0;
-  font-size: 1.15rem;
-  color: #f8fafc;
-}
-
-.hermes-header-title span {
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.hermes-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+.hermes-menu .ant-menu-item:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
 }
 
 .hermes-content {
   padding: 24px;
 }
 
+.hermes-page-container {
+  min-height: calc(100vh - 104px);
+}
+
 .glass-panel {
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(18px);
+  background: #fff !important;
+  border: 1px solid rgba(26, 23, 22, 0.08);
+  box-shadow: none;
+}
+
+.qwen-section-card .ant-card-head,
+.qwen-summary-card,
+.qwen-context-strip {
+  border-color: rgba(26, 23, 22, 0.06) !important;
+}
+
+.qwen-summary-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qwen-card-description {
+  margin-bottom: 16px !important;
+  color: rgba(26, 23, 22, 0.55) !important;
+}
+
+.qwen-context-strip {
+  background: rgba(43, 18, 0, 0.02) !important;
+}
+
+.qwen-stat-card .ant-card-body {
+  padding-top: 18px;
+}
+
+.qwen-stat-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.qwen-stat-card-label {
+  color: rgba(26, 23, 22, 0.45) !important;
+}
+
+.qwen-stat-card-value.ant-typography {
+  margin: 0 !important;
+  color: #1a1716 !important;
+}
+
+.qwen-stat-card-helper {
+  color: rgba(26, 23, 22, 0.55) !important;
+}
+
+.qwen-summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.qwen-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(26, 23, 22, 0.06);
+}
+
+.qwen-summary-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.qwen-summary-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(26, 23, 22, 0.45);
+}
+
+.qwen-list-item {
+  padding-inline: 0 !important;
 }
 
 .page-stack {
@@ -156,14 +314,52 @@ a {
   flex-wrap: wrap;
 }
 
-.page-header-copy h2 {
-  margin: 0;
-  color: #f8fafc;
+.qwen-page-header {
+  align-items: center;
 }
 
+.qwen-page-header-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qwen-page-description,
+.qwen-page-header-copy p,
 .page-header-copy p {
-  margin: 6px 0 0;
-  color: #94a3b8;
+  margin: 0;
+  max-width: 720px;
+  color: rgba(26, 23, 22, 0.55);
+}
+
+.qwen-page-header-actions {
+  align-items: center;
+}
+
+.qwen-page-refresh {
+  border-color: rgba(26, 23, 22, 0.1) !important;
+  background: #fff !important;
+}
+
+.qwen-breadcrumb-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 500;
+  color: #1a1716;
+}
+
+.qwen-breadcrumb-parent {
+  color: rgba(26, 23, 22, 0.35);
+}
+
+.qwen-breadcrumb-separator {
+  color: rgba(26, 23, 22, 0.2);
+}
+
+.qwen-breadcrumb-current {
+  color: #1a1716;
 }
 
 .metric-card .ant-statistic-content,
@@ -184,7 +380,8 @@ a {
 }
 
 .ant-layout-sider-trigger {
-  background: rgba(15, 23, 42, 0.98) !important;
+  background: #f9f8f4 !important;
+  color: rgba(26, 23, 22, 0.45) !important;
 }
 
 .ant-card,
@@ -211,19 +408,7 @@ a {
 .ant-list,
 .ant-descriptions-view,
 .ant-collapse {
-  background: rgba(15, 23, 42, 0.72) !important;
-}
-
-.ant-table-thead > tr > th {
-  background: rgba(30, 41, 59, 0.95) !important;
-}
-
-.ant-table-tbody > tr > td {
-  background: transparent !important;
-}
-
-.ant-table-row:hover > td {
-  background: rgba(30, 41, 59, 0.65) !important;
+  background: #fff !important;
 }
 
 .ant-card-head,
@@ -237,7 +422,7 @@ a {
 .ant-statistic,
 .ant-typography,
 .ant-empty-description {
-  color: #e2e8f0 !important;
+  color: #1a1716 !important;
 }
 
 .ant-layout-header,
@@ -246,14 +431,34 @@ a {
   background: transparent !important;
 }
 
-.ant-menu-dark,
-.ant-menu-dark .ant-menu-sub,
-.ant-menu-dark > .ant-menu {
+.ant-table-thead > tr > th {
+  background: #faf7f2 !important;
+  color: rgba(26, 23, 22, 0.55) !important;
+}
+
+.ant-table-tbody > tr > td {
   background: transparent !important;
 }
 
-.ant-menu-dark .ant-menu-item-selected {
-  background: linear-gradient(90deg, rgba(124, 58, 237, 0.32), rgba(37, 99, 235, 0.2)) !important;
+.ant-table-row:hover > td {
+  background: rgba(43, 18, 0, 0.03) !important;
+}
+
+.ant-select-selector,
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker {
+  border-color: rgba(26, 23, 22, 0.12) !important;
+}
+
+.ant-btn-primary {
+  background: #ff7f16 !important;
+  border-color: #ff7f16 !important;
+}
+
+.ant-btn-primary:hover {
+  background: #e06f12 !important;
+  border-color: #e06f12 !important;
 }
 
 .ant-tag {
@@ -261,7 +466,7 @@ a {
 }
 
 @media (max-width: 992px) {
-  .hermes-header,
+  .hermes-topbar,
   .hermes-content {
     padding-inline: 16px !important;
   }

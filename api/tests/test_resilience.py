@@ -71,6 +71,20 @@ def test_profile_summary_tolerates_invalid_partial_files(tmp_path, monkeypatch) 
 def test_run_hermes_command_catches_oserror(monkeypatch) -> None:
     monkeypatch.setattr(hermes_adapter, "ensure_profile_exists", lambda profile: hermes_adapter.HermesContext(profile=profile))
     monkeypatch.setattr(
+        hermes_adapter,
+        "settings",
+        SimpleNamespace(
+            hermes_home=Path("/opt/data"),
+            profiles_dir_name="profiles",
+            logs_dir_name="logs",
+            cron_dir_name="cron",
+            skills_snapshot_name=".skills_prompt_snapshot.json",
+            command_timeout_seconds=45,
+            hermes_bin=Path("/opt/hermes/.venv/bin/hermes"),
+            hermes_root=Path("/opt/hermes"),
+        ),
+    )
+    monkeypatch.setattr(
         hermes_adapter.subprocess,
         "run",
         lambda *args, **kwargs: (_ for _ in ()).throw(FileNotFoundError("missing hermes binary")),
@@ -81,6 +95,40 @@ def test_run_hermes_command_catches_oserror(monkeypatch) -> None:
     assert result.ok is False
     assert result.exit_code == 1
     assert "missing hermes binary" in result.stderr
+
+
+def test_run_hermes_command_uses_configured_runtime_root(tmp_path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(*args, **kwargs):
+        captured["cwd"] = kwargs.get("cwd")
+        captured["env"] = kwargs.get("env")
+        return SimpleNamespace(returncode=0, stdout="ok", stderr="")
+
+    monkeypatch.setattr(hermes_adapter, "ensure_profile_exists", lambda profile: hermes_adapter.HermesContext(profile=profile))
+    monkeypatch.setattr(
+        hermes_adapter,
+        "settings",
+        SimpleNamespace(
+            hermes_home=tmp_path,
+            profiles_dir_name="profiles",
+            logs_dir_name="logs",
+            cron_dir_name="cron",
+            skills_snapshot_name=".skills_prompt_snapshot.json",
+            command_timeout_seconds=45,
+            hermes_bin=tmp_path / "runtime" / ".venv" / "bin" / "hermes",
+            hermes_root=tmp_path / "runtime",
+        ),
+    )
+    (tmp_path / "runtime").mkdir()
+    monkeypatch.setattr(hermes_adapter.subprocess, "run", fake_run)
+
+    result = hermes_adapter.run_hermes_command(["status"])
+
+    assert result.ok is True
+    assert captured["cwd"] == str(tmp_path / "runtime")
+    assert isinstance(captured["env"], dict)
+    assert captured["env"]["HERMES_HOME"] == str(tmp_path)
 
 
 def test_list_skills_falls_back_to_filesystem(tmp_path, monkeypatch) -> None:

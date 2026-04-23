@@ -1,12 +1,11 @@
 import {
   ClockCircleOutlined,
-  DashboardOutlined,
   FileTextOutlined,
   ProfileOutlined,
   RadarChartOutlined,
   ToolOutlined,
 } from '@ant-design/icons'
-import { Avatar, Layout, Menu, Select, Space, Tag, Typography } from 'antd'
+import { Layout, Menu, Select, Space, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
 import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -16,21 +15,21 @@ import { useProfileStore } from '../store/profileStore'
 
 const navigationItems: MenuProps['items'] = [
   {
-    type: 'group',
-    label: 'Control Plane',
+    key: 'control-group',
+    label: 'Control',
     children: [
-      { key: '/overview', icon: <DashboardOutlined />, label: 'Overview' },
-      { key: '/profiles', icon: <ProfileOutlined />, label: 'Profiles' },
-      { key: '/skills', icon: <ToolOutlined />, label: 'Skills' },
-    ],
-  },
-  {
-    type: 'group',
-    label: 'Operations',
-    children: [
+      { key: '/overview', label: 'Overview' },
       { key: '/sessions', icon: <RadarChartOutlined />, label: 'Sessions' },
       { key: '/cron-jobs', icon: <ClockCircleOutlined />, label: 'Cron Jobs' },
       { key: '/logs', icon: <FileTextOutlined />, label: 'Logs' },
+    ],
+  },
+  {
+    key: 'settings-group',
+    label: 'Settings',
+    children: [
+      { key: '/profiles', icon: <ProfileOutlined />, label: 'Profiles' },
+      { key: '/skills', icon: <ToolOutlined />, label: 'Skills' },
     ],
   },
 ]
@@ -41,6 +40,7 @@ export function DashboardLayout() {
   const { selectedProfileId, setSelectedProfileId } = useProfileStore()
   const profilesQuery = useApiQuery(apiClient.getProfiles, [])
   const selectedProfile = profilesQuery.data?.find((profile) => profile.id === selectedProfileId) ?? profilesQuery.data?.[0]
+  const profileCount = profilesQuery.data?.length ?? 0
 
   useEffect(() => {
     if (!selectedProfileId && selectedProfile?.id) {
@@ -49,57 +49,74 @@ export function DashboardLayout() {
   }, [selectedProfileId, selectedProfile?.id, setSelectedProfileId])
 
   return (
-    <Layout className="hermes-shell">
-      <Layout.Sider breakpoint="lg" collapsedWidth={80} className="hermes-sider">
-        <div className="hermes-logo">
-          <div className="hermes-logo-mark">H</div>
-          <div className="hermes-logo-copy">
-            <span className="hermes-logo-title">Hermes Control</span>
-            <span className="hermes-logo-subtitle">Phase 1 dashboard</span>
+    <Layout className="hermes-shell qwen-shell">
+      <Layout.Header className="hermes-topbar">
+        <div className="hermes-topbar-brand">
+          <div className="hermes-logo-wordmark">
+            <img alt="Hermes Control" className="hermes-logo-image" src="/favicon.svg" />
+            <div className="hermes-logo-meta">
+              <span className="hermes-logo-wordmark-main">Hermes Control</span>
+              <span className="hermes-logo-wordmark-subtitle">Standalone workspace console</span>
+            </div>
+            <span className="hermes-logo-divider" />
+            <span className="hermes-logo-wordmark-badge">Phase 1</span>
           </div>
         </div>
-        <Menu
-          mode="inline"
-          theme="dark"
-          className="hermes-menu"
-          selectedKeys={[location.pathname]}
-          items={navigationItems}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Layout.Sider>
-      <Layout className="hermes-layout">
-        <Layout.Header className="hermes-header">
-          <div className="hermes-header-title">
-            <h1>Hermes Control Plane</h1>
-            <span>QwenPaw-inspired shell for global management, profile switching, and operational visibility.</span>
-          </div>
-          <Space className="hermes-header-actions" size={12} wrap>
-            <Tag color={profilesQuery.isMock ? 'gold' : 'blue'}>{profilesQuery.isMock ? 'Mock API' : 'Live API'}</Tag>
-            <Select
-              style={{ minWidth: 220 }}
-              loading={profilesQuery.isLoading}
-              placeholder="Select profile"
-              value={selectedProfile?.id}
-              options={(profilesQuery.data ?? []).map((profile) => ({
-                label: `${profile.name} · ${profile.gatewayState}`,
-                value: profile.id,
-              }))}
-              onChange={setSelectedProfileId}
-            />
-            <Space size={10}>
-              <Avatar style={{ background: '#2563eb' }}>HC</Avatar>
-              <div>
-                <Typography.Text strong style={{ display: 'block', color: '#f8fafc' }}>
-                  {selectedProfile?.name ?? 'No profile'}
-                </Typography.Text>
-                <Typography.Text type="secondary">{selectedProfile?.path ?? 'Awaiting profile data'}</Typography.Text>
+        <Space size={12} className="hermes-topbar-actions">
+          <Typography.Text className="hermes-topbar-link">Control Plane</Typography.Text>
+          <Typography.Text className="hermes-topbar-link">Profiles</Typography.Text>
+          <span className="hermes-topbar-divider" />
+          <Tag bordered={false} color={profilesQuery.isMock ? 'gold' : 'orange'}>
+            {profilesQuery.isMock ? 'Mock mode' : 'Live mode'}
+          </Tag>
+          <Typography.Text className="hermes-topbar-status">
+            {selectedProfile?.name ?? 'No workspace selected'}
+          </Typography.Text>
+        </Space>
+      </Layout.Header>
+
+      <Layout className="hermes-main-layout">
+        <Layout.Sider width={248} breakpoint="lg" collapsedWidth={72} className="hermes-sider">
+          <div className="hermes-agent-scoped-section">
+            <div className="hermes-agent-panel">
+              <div className="hermes-agent-panel-header">
+                <div className="hermes-agent-panel-label">Current workspace</div>
+                <span className="hermes-agent-panel-count">{profileCount}</span>
               </div>
-            </Space>
-          </Space>
-        </Layout.Header>
-        <Layout.Content className="hermes-content">
-          <Outlet />
-        </Layout.Content>
+              <Select
+                className="hermes-agent-selector"
+                loading={profilesQuery.isLoading}
+                placeholder="Select profile"
+                value={selectedProfile?.id}
+                options={(profilesQuery.data ?? []).map((profile) => ({
+                  label: `${profile.name}`,
+                  value: profile.id,
+                }))}
+                onChange={setSelectedProfileId}
+              />
+              <Typography.Text className="hermes-agent-panel-hint">
+                {selectedProfile?.description ?? 'Hermes profile scope'}
+              </Typography.Text>
+            </div>
+
+            <Menu
+              mode="inline"
+              className="hermes-menu hermes-menu-scoped"
+              selectedKeys={[location.pathname]}
+              defaultOpenKeys={['control-group', 'settings-group']}
+              items={navigationItems}
+              onClick={({ key }) => navigate(key)}
+            />
+          </div>
+        </Layout.Sider>
+
+        <Layout className="hermes-layout">
+          <Layout.Content className="hermes-content">
+            <div className="hermes-page-container">
+              <Outlet />
+            </div>
+          </Layout.Content>
+        </Layout>
       </Layout>
     </Layout>
   )

@@ -7,20 +7,21 @@ import './index.css'
 
 const theme = {
   token: {
-    colorPrimary: '#7c3aed',
+    colorPrimary: '#ff7f16',
+    colorInfo: '#615ced',
     borderRadius: 12,
-    colorBgLayout: '#0f172a',
-    colorTextBase: '#e2e8f0',
-    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    colorBgLayout: '#f9f8f4',
+    colorBgContainer: '#ffffff',
+    colorTextBase: '#1a1716',
+    colorTextSecondary: 'rgba(26, 23, 22, 0.6)',
+    colorBorder: 'rgba(26, 23, 22, 0.08)',
+    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   },
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ConfigProvider
-      theme={theme}
-      componentSize="middle"
-    >
+    <ConfigProvider theme={theme} componentSize="middle">
       <AntApp>
         <BrowserRouter>
           <App />

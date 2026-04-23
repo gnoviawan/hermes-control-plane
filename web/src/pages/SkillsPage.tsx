@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Col, Form, Row, Select, Space, Switch, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Col, Form, Row, Select, Space, Switch, Table, Tag, Typography, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
 import { apiClient } from '../api/client'
@@ -19,6 +19,8 @@ export function SkillsPage() {
     () => (profilesQuery.data ?? []).map((profile) => ({ label: profile.name, value: profile.id })),
     [profilesQuery.data],
   )
+  const enabledCount = (skillsQuery.data ?? []).filter((skill) => skill.enabledProfiles.includes(activeProfileId)).length
+  const broadcastTargets = Math.max(profileOptions.filter((profile) => profile.value !== activeProfileId).length, 0)
 
   const handleToggle = async (skill: Skill, enabled: boolean) => {
     const result = await apiClient.toggleSkill(activeProfileId, skill.id, { enabled })
@@ -76,23 +78,45 @@ export function SkillsPage() {
         onRefresh={skillsQuery.refresh}
       />
 
-      {activeProfileId ? (
-        <Alert
-          type="info"
-          showIcon
-          message={`Active profile: ${activeProfileId}`}
-          description="Toggles apply to the selected profile in the top header."
-        />
-      ) : null}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Catalog size</span>
+            <Typography.Title level={3}>{skillsQuery.data?.length ?? 0}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Enabled on active workspace</span>
+            <Typography.Title level={3}>{enabledCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Broadcast targets</span>
+            <Typography.Title level={3}>{broadcastTargets}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="glass-panel qwen-context-strip">
+        <Space direction="vertical" size={2}>
+          <Typography.Text strong>Active workspace: {activeProfileId}</Typography.Text>
+          <Typography.Text type="secondary">Toggles apply to the workspace selected in the left navigation.</Typography.Text>
+        </Space>
+      </Card>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={16}>
-          <Card className="glass-panel" title="Skill catalog">
+          <Card className="glass-panel qwen-section-card" title="Skill catalog">
             <Table rowKey="id" loading={skillsQuery.isLoading} dataSource={skillsQuery.data ?? []} columns={columns} pagination={false} />
           </Card>
         </Col>
         <Col xs={24} xl={8}>
-          <Card className="glass-panel" title="Broadcast skills">
+          <Card className="glass-panel qwen-section-card" title="Broadcast skills">
+            <Typography.Paragraph className="qwen-card-description">
+              Copy enabled skills from the current workspace into one or more target workspaces.
+            </Typography.Paragraph>
             <Form
               form={form}
               layout="vertical"

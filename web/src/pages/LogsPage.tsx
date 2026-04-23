@@ -1,4 +1,4 @@
-import { Card, Empty, Segmented, Table, Tag, Typography } from 'antd'
+import { Card, Col, Empty, Row, Segmented, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
 import { apiClient } from '../api/client'
@@ -25,6 +25,9 @@ export function LogsPage() {
     () => (data ?? []).filter((entry) => level === 'ALL' || entry.level === level),
     [data, level],
   )
+  const infoCount = (data ?? []).filter((entry) => entry.level === 'INFO').length
+  const warnCount = (data ?? []).filter((entry) => entry.level === 'WARN').length
+  const errorCount = (data ?? []).filter((entry) => entry.level === 'ERROR').length
 
   return (
     <div className="page-stack">
@@ -36,7 +39,29 @@ export function LogsPage() {
         actions={<Segmented value={level} options={['ALL', 'INFO', 'WARN', 'ERROR']} onChange={(value) => setLevel(value as typeof level)} />}
         onRefresh={refresh}
       />
-      <Card className="glass-panel" title="Log stream">
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Info logs</span>
+            <Typography.Title level={3}>{infoCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Warnings</span>
+            <Typography.Title level={3}>{warnCount}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Errors</span>
+            <Typography.Title level={3}>{errorCount}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="glass-panel qwen-section-card" title="Log stream">
         {filteredData.length ? (
           <Table rowKey="id" loading={isLoading} dataSource={filteredData} columns={columns} pagination={false} />
         ) : (

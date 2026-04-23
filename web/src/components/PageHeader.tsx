@@ -13,14 +13,18 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, mock, error, actions, onRefresh }: PageHeaderProps) {
   return (
     <div className="page-stack">
-      <div className="page-header">
-        <div className="page-header-copy">
-          <Typography.Title level={2}>{title}</Typography.Title>
-          <Typography.Paragraph>{description}</Typography.Paragraph>
+      <div className="page-header qwen-page-header">
+        <div className="page-header-copy qwen-page-header-copy">
+          <div className="qwen-breadcrumb-row">
+            <span className="qwen-breadcrumb-parent">Hermes Control</span>
+            <span className="qwen-breadcrumb-separator">/</span>
+            <span className="qwen-breadcrumb-current">{title}</span>
+          </div>
+          <Typography.Paragraph className="qwen-page-description">{description}</Typography.Paragraph>
         </div>
-        <Space wrap>
+        <Space wrap className="qwen-page-header-actions">
           {actions}
-          {onRefresh ? <Button onClick={onRefresh}>Refresh</Button> : null}
+          {onRefresh ? <Button className="qwen-page-refresh" onClick={onRefresh}>Refresh</Button> : null}
         </Space>
       </div>
       {mock ? (
@@ -28,7 +32,7 @@ export function PageHeader({ title, description, mock, error, actions, onRefresh
           showIcon
           type="warning"
           message="Mock data active"
-          description={error ?? 'Backend routes are not available yet, so the UI is using the planned Phase 1 endpoint shapes.'}
+          description={error ?? 'Backend routes are not available yet, so the UI is using the planned endpoint shape.'}
         />
       ) : null}
       {!mock && error ? <Alert showIcon type="error" message="Request failed" description={error} /> : null}

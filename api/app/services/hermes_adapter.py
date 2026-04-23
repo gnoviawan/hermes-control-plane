@@ -41,10 +41,11 @@ def run_hermes_command(args: list[str], *, profile: str = "default", timeout: in
     env = os.environ.copy()
     env["HERMES_HOME"] = str(context.home)
     command = [str(settings.hermes_bin), *args]
+    command_cwd = str(settings.hermes_root) if settings.hermes_root.exists() else None
     try:
         process = subprocess.run(
             command,
-            cwd="/opt/hermes",
+            cwd=command_cwd,
             env=env,
             capture_output=True,
             text=True,

@@ -39,6 +39,8 @@ export function ProfilesPage() {
     () => (data ?? []).map((profile) => ({ label: profile.name, value: profile.id })),
     [data],
   )
+  const healthyProfiles = (data ?? []).filter((profile) => profile.gatewayState === 'online').length
+  const degradedProfiles = (data ?? []).filter((profile) => profile.gatewayState === 'degraded').length
 
   const handleCreateProfile = async (values: CreateProfilePayload) => {
     setIsSubmitting(true)
@@ -60,13 +62,37 @@ export function ProfilesPage() {
       />
 
       <Row gutter={[16, 16]}>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Total workspaces</span>
+            <Typography.Title level={3}>{data?.length ?? 0}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Healthy gateways</span>
+            <Typography.Title level={3}>{healthyProfiles}</Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card className="glass-panel qwen-summary-card">
+            <span className="qwen-summary-label">Needs attention</span>
+            <Typography.Title level={3}>{degradedProfiles}</Typography.Title>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
         <Col xs={24} xl={16}>
-          <Card className="glass-panel" title="Available profiles">
+          <Card className="glass-panel qwen-section-card" title="Available profiles">
             <Table rowKey="id" loading={isLoading} dataSource={data ?? []} columns={columns} pagination={false} />
           </Card>
         </Col>
         <Col xs={24} xl={8}>
-          <Card className="glass-panel" title="Create profile">
+          <Card className="glass-panel qwen-section-card" title="Create profile">
+            <Typography.Paragraph className="qwen-card-description">
+              Create a new isolated workspace and optionally clone a working baseline from an existing profile.
+            </Typography.Paragraph>
             <Form form={form} layout="vertical" onFinish={(values) => void handleCreateProfile(values)}>
               <Form.Item name="name" label="Profile name" rules={[{ required: true, message: 'Please provide a profile name' }]}>
                 <Input placeholder="e.g. Release Ops" />

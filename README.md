@@ -35,6 +35,18 @@ uvicorn app.main:app --reload --port 8788
 
 Deployed via Dokploy as a separate compose stack with:
 - `dashboard` service (this app, port 8080)
-- `hermes-sidecar` service (Hermes agent, shared volumes)
+- `hermes-sidecar` service (Hermes agent, shared bind mounts)
 
 See `deploy/` for compose templates.
+
+### Dokploy bind mounts
+
+To inspect and control the existing Hermes runtime **without modifying the current live deployment**,
+the standalone stack should mount the live Hermes paths from the same host:
+
+- `HERMES_DATA_PATH=/opt/data`
+- `HERMES_RUNTIME_PATH=/opt/hermes`
+- `HERMES_BIN=/opt/hermes/.venv/bin/hermes`
+
+This lets the dashboard wrap the real Hermes CLI/runtime and read the real `HERMES_HOME`
+instead of booting against an empty named volume.

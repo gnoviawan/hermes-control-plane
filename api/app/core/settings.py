@@ -11,6 +11,12 @@ class Settings:
     api_prefix: str = "/api"
     hermes_home: Path = Path(os.getenv("HERMES_HOME", "/opt/data")).expanduser()
     hermes_bin: Path = Path(os.getenv("HERMES_BIN", "/opt/hermes/.venv/bin/hermes")).expanduser()
+    hermes_root: Path = Path(
+        os.getenv(
+            "HERMES_ROOT",
+            str(Path(os.getenv("HERMES_BIN", "/opt/hermes/.venv/bin/hermes")).expanduser().parents[2]),
+        )
+    ).expanduser()
     profiles_dir_name: str = "profiles"
     logs_dir_name: str = "logs"
     cron_dir_name: str = "cron"
