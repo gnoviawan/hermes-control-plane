@@ -6,13 +6,7 @@ services:
     entrypoint: ["sleep"]
     command: ["infinity"]
     volumes:
-      - type: bind
-        source: ${HERMES_DATA_PATH:-/opt/data}
-        target: /opt/data
-      - type: bind
-        source: ${HERMES_RUNTIME_PATH:-/opt/hermes}
-        target: /opt/hermes
-        read_only: true
+      - hermes_data:/opt/data
     networks:
       - hermes-control-net
 
@@ -28,20 +22,17 @@ services:
       - "8080"
     environment:
       HERMES_HOME: /opt/data
-      HERMES_BIN: ${HERMES_BIN:-/opt/hermes/.venv/bin/hermes}
+      HERMES_BIN: /opt/hermes/.venv/bin/hermes
       HERMES_ROOT: /opt/hermes
       STATIC_DIR: /app/static
     volumes:
-      - type: bind
-        source: ${HERMES_DATA_PATH:-/opt/data}
-        target: /opt/data
-      - type: bind
-        source: ${HERMES_RUNTIME_PATH:-/opt/hermes}
-        target: /opt/hermes
-        read_only: true
+      - hermes_data:/opt/data
     networks:
       - hermes-control-net
       - dokploy-network
+
+volumes:
+  hermes_data:
 
 networks:
   hermes-control-net:
