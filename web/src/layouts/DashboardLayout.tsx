@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import { Avatar, Layout, Menu, Select, Space, Tag, Typography } from 'antd'
 import type { MenuProps } from 'antd'
+import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
@@ -41,9 +42,11 @@ export function DashboardLayout() {
   const profilesQuery = useApiQuery(apiClient.getProfiles, [])
   const selectedProfile = profilesQuery.data?.find((profile) => profile.id === selectedProfileId) ?? profilesQuery.data?.[0]
 
-  if (!selectedProfileId && selectedProfile?.id) {
-    setSelectedProfileId(selectedProfile.id)
-  }
+  useEffect(() => {
+    if (!selectedProfileId && selectedProfile?.id) {
+      setSelectedProfileId(selectedProfile.id)
+    }
+  }, [selectedProfileId, selectedProfile?.id, setSelectedProfileId])
 
   return (
     <Layout className="hermes-shell">
