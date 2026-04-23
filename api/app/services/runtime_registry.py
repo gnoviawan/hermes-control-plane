@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Protocol
 
 from app.models import AgentRuntimeSummary, ProfileSummary, SessionSummary
 from app.services.hermes_adapter import (
@@ -15,11 +15,15 @@ from app.services.hermes_adapter import (
 from app.utils import load_yaml_file
 
 
+class ProfileSummaryProvider(Protocol):
+    def __call__(self, context: HermesContext, *, active_profile: str) -> ProfileSummary: ...
+
+
 @dataclass
 class RuntimeRegistry:
     contexts_provider: Callable[[], list[HermesContext]] = profile_contexts
     active_profile_provider: Callable[[], str] = active_profile_name
-    profile_summary_provider: Callable[[HermesContext, str], ProfileSummary] = profile_summary
+    profile_summary_provider: ProfileSummaryProvider = profile_summary
     session_reader: Callable[[str], list[SessionSummary]] = list_sessions
     active_run_counter: Callable[[str], int] | None = None
     mcp_status_provider: Callable[[str], str | None] | None = None
@@ -36,7 +40,7 @@ class RuntimeRegistry:
         context = next((item for item in self.contexts_provider() if item.profile == agent_id), None)
         if context is None:
             context = ensure_profile_exists(agent_id)
-        summary = self.profile_summary_provider(context, active_profile)
+        summary = self.profile_summary_provider(context, active_profile=active_profile)
         sessions = self.session_reader(agent_id)
         active_run_count = self._active_run_count(agent_id)
         last_activity = self._last_activity_at(sessions)

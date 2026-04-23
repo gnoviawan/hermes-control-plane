@@ -24,6 +24,34 @@ def _profile_summary(*, name: str, is_active: bool, gateway_state: str | None, m
     )
 
 
+def test_runtime_registry_passes_active_profile_as_keyword_only_argument() -> None:
+    calls: list[tuple[str, str]] = []
+
+    def strict_profile_summary(context: HermesContext, *, active_profile: str) -> ProfileSummary:
+        calls.append((context.profile, active_profile))
+        return _profile_summary(
+            name=context.profile,
+            is_active=context.profile == active_profile,
+            gateway_state='online',
+            model='gpt-5.4',
+            provider='custom',
+        )
+
+    registry = RuntimeRegistry(
+        contexts_provider=lambda: [HermesContext(profile='default')],
+        active_profile_provider=lambda: 'default',
+        profile_summary_provider=strict_profile_summary,
+        session_reader=lambda profile: [],
+        active_run_counter=lambda profile: 0,
+        mcp_status_provider=lambda profile: 'idle',
+    )
+
+    runtime = registry.get_runtime('default')
+
+    assert runtime.agent_id == 'default'
+    assert calls == [('default', 'default')]
+
+
 def test_runtime_registry_builds_profile_scoped_capsule_summary() -> None:
     registry = RuntimeRegistry(
         contexts_provider=lambda: [HermesContext(profile='default'), HermesContext(profile='nightowl')],
