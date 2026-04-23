@@ -66,6 +66,24 @@ class AgentsResponse(BaseModel):
     total: int
 
 
+class AgentRuntimeSummary(BaseModel):
+    agent_id: str
+    status: Literal["active", "idle", "degraded", "missing"]
+    active_run_count: int = 0
+    active_session_count: int = 0
+    active_session_id: str | None = None
+    effective_provider: str | None = None
+    effective_model: str | None = None
+    mcp_status: str | None = None
+    gateway_status: str | None = None
+    last_activity_at: str | None = None
+
+
+class AgentRuntimeCollection(BaseModel):
+    runtimes: list[AgentRuntimeSummary]
+    total: int
+
+
 class CommandResult(BaseModel):
     command: list[str]
     exit_code: int
