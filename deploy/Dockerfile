@@ -22,16 +22,11 @@ COPY --from=frontend /app/web/dist /app/static
 # container starts uvicorn directly instead of treating it as a Hermes subcommand.
 ENTRYPOINT []
 
-# Runtime user matches host UID/GID
-ARG WANTED_UID=10000
-ARG WANTED_GID=10000
-RUN groupadd -g $WANTED_GID appuser && useradd -u $WANTED_UID -g $WANTED_GID -m appuser
-USER appuser
-
 EXPOSE 8080
 ENV DASHBOARD_PORT=8080
 ENV STATIC_DIR=/app/static
 ENV HERMES_HOME=/opt/data
 ENV HERMES_BIN=/opt/hermes/.venv/bin/hermes
+ENV HERMES_ROOT=/opt/hermes
 
 CMD ["/opt/hermes/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
