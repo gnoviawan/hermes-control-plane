@@ -11,8 +11,8 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Install backend
-COPY api/pyproject.toml api/
-COPY api/app/ app/
+COPY api/pyproject.toml ./pyproject.toml
+COPY api/app ./app
 RUN pip install --no-cache-dir -e .
 
 # Copy frontend build
@@ -27,5 +27,7 @@ USER appuser
 EXPOSE 8080
 ENV DASHBOARD_PORT=8080
 ENV STATIC_DIR=/app/static
+ENV HERMES_HOME=/opt/data
+ENV HERMES_BIN=/opt/hermes/.venv/bin/hermes
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]

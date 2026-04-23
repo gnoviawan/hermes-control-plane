@@ -1,34 +1,48 @@
 services:
-  dashboard:
+  hermes:
+    image: nousresearch/hermes-agent:v2026.4.13
+    container_name: hermes-control-plane-hermes
+    restart: unless-stopped
+    command: /bin/sh -lc "sleep infinity"
+    volumes:
+      - ai-hermes-abhj7f_hermes_data:/opt/data
+      - ai-hermes-abhj7f_hermes_profiles:/opt/data/profiles
+      - ai-hermes-abhj7f_hermes_agent_src:/opt/hermes
+    networks:
+      - hermes-control-net
+
+  control-plane:
     build:
       context: .
       dockerfile: deploy/Dockerfile
     container_name: hermes-control-plane
     restart: unless-stopped
+    depends_on:
+      - hermes
     ports:
       - "8080:8080"
     environment:
-      HERMES_HOME: /home/hermes/.hermes
-      HERMES_BIN: /home/hermes/.hermes/hermes-agent/.venv/bin/hermes
-      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:-changeme}
+      HERMES_HOME: /opt/data
+      HERMES_BIN: /opt/hermes/.venv/bin/hermes
+      STATIC_DIR: /app/static
     volumes:
-      - /opt/data:/home/hermes/.hermes
-      - /opt/hermes:/home/hermes/.hermes/hermes-agent:ro
+      - ai-hermes-abhj7f_hermes_data:/opt/data
+      - ai-hermes-abhj7f_hermes_profiles:/opt/data/profiles
+      - ai-hermes-abhj7f_hermes_agent_src:/opt/hermes:ro
+    networks:
+      - hermes-control-net
+      - dokploy-network
 
-  hermes-sidecar:
-    image: ghcr.io/nesquena/hermes-webui:latest
-    container_name: hermes-sidecar
-    restart: unless-stopped
-    ports:
-      - "8788:8787"
-    environment:
-      WANTED_UID: "10000"
-      WANTED_GID: "10000"
-      HERMES_WEBUI_HOST: 0.0.0.0
-      HERMES_WEBUI_PORT: "8787"
-      HERMES_WEBUI_STATE_DIR: /home/hermeswebui/.hermes/webui
-      HERMES_WEBUI_DEFAULT_WORKSPACE: /workspace
-    volumes:
-      - /opt/data:/home/hermeswebui/.hermes
-      - /opt/hermes:/home/hermeswebui/.hermes/hermes-agent:ro
-      - /opt/data:/workspace
+volumes:
+  ai-hermes-abhj7f_hermes_data:
+    external: true
+  ai-hermes-abhj7f_hermes_profiles:
+    external: true
+  ai-hermes-abhj7f_hermes_agent_src:
+    external: true
+
+networks:
+  hermes-control-net:
+    driver: bridge
+  dokploy-network:
+    external: true
