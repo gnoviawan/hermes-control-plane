@@ -40,16 +40,34 @@ def run_hermes_command(args: list[str], *, profile: str = "default", timeout: in
     context = ensure_profile_exists(profile)
     env = os.environ.copy()
     env["HERMES_HOME"] = str(context.home)
-    process = subprocess.run(
-        [str(settings.hermes_bin), *args],
-        cwd="/opt/hermes",
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=timeout or settings.command_timeout_seconds,
-    )
+    command = [str(settings.hermes_bin), *args]
+    try:
+        process = subprocess.run(
+            command,
+            cwd="/opt/hermes",
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=timeout or settings.command_timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        return CommandResult(
+            command=command,
+            exit_code=124,
+            stdout=exc.stdout or "",
+            stderr=(exc.stderr or "").strip() or f"Hermes command timed out after {exc.timeout} seconds",
+            ok=False,
+        )
+    except OSError as exc:
+        return CommandResult(
+            command=command,
+            exit_code=1,
+            stdout="",
+            stderr=str(exc),
+            ok=False,
+        )
     return CommandResult(
-        command=[str(settings.hermes_bin), *args],
+        command=command,
         exit_code=process.returncode,
         stdout=process.stdout,
         stderr=process.stderr,
@@ -93,6 +111,7 @@ def profile_summary(context: HermesContext, *, active_profile: str) -> ProfileSu
         name=context.profile,
         path=str(context.home),
         is_active=context.profile == active_profile,
+        exists=context.home.exists(),
         model=model_cfg.get("default"),
         provider=model_cfg.get("provider"),
         gateway_state=gateway_state,
@@ -242,9 +261,16 @@ def status_payload() -> dict[str, Any]:
     active = active_profile_name()
     status = run_hermes_command(["status"])
     profiles = [profile_summary(context, active_profile=active) for context in profile_contexts()]
-    sessions = list_sessions(active)
-    cron_jobs = list_cron_jobs(active)
+    try:
+        sessions = list_sessions(active)
+    except HTTPException:
+        sessions = []
+    try:
+        cron_jobs = list_cron_jobs(active)
+    except HTTPException:
+        cron_jobs = []
     gateway_state = next((profile.gateway_state for profile in profiles if profile.name == active), None)
+    raw_status = status.stdout or status.stderr
     return {
         "ok": status.ok,
         "active_profile": active,
@@ -252,6 +278,6 @@ def status_payload() -> dict[str, Any]:
         "session_count": len(sessions),
         "cron_job_count": len(cron_jobs),
         "gateway_state": gateway_state,
-        "status_excerpt": [line for line in status.stdout.splitlines() if line.strip()][:12],
-        "raw_status": status.stdout,
+        "status_excerpt": [line for line in raw_status.splitlines() if line.strip()][:12],
+        "raw_status": raw_status,
     }

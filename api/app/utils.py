@@ -18,14 +18,20 @@ def validate_profile_name(name: str) -> bool:
 def load_yaml_file(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        return {}
     return data if isinstance(data, dict) else {}
 
 
 def load_json_file(path: Path) -> Any:
     if not path.exists():
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def redact_secrets(value: Any) -> Any:
