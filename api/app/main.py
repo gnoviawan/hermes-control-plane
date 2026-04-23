@@ -15,6 +15,7 @@ from app.models import (
     AgentRuntimeHints,
     AgentRuntimeSummary,
     AgentsResponse,
+    AgentSessionsResponse,
     AgentSummary,
     ConfigSummary,
     CreateProfileRequest,
@@ -23,6 +24,8 @@ from app.models import (
     RunCreateRequest,
     RunSummary,
     RunsResponse,
+    SessionDetail,
+    SessionSearchResponse,
     SkillBroadcastRequest,
     SkillBroadcastResult,
     SkillsResponse,
@@ -46,6 +49,7 @@ from app.services.hermes_adapter import (
 )
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
+from app.services.session_service import session_service
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -196,6 +200,24 @@ def post_profiles(payload: CreateProfileRequest) -> dict:
 @app.get('/api/sessions', tags=['sessions'])
 def get_sessions(profile: str = Query('default')) -> dict:
     return {'profile': profile, 'sessions': [item.model_dump() for item in list_sessions(profile)]}
+
+
+@app.get('/api/agents/{agent_id}/sessions/search', response_model=SessionSearchResponse, tags=['sessions'])
+def search_agent_sessions(agent_id: str, q: str = Query('')) -> SessionSearchResponse:
+    ensure_profile_exists(agent_id)
+    return session_service.search_sessions(agent_id, q)
+
+
+@app.get('/api/agents/{agent_id}/sessions', response_model=AgentSessionsResponse, tags=['sessions'])
+def list_agent_sessions(agent_id: str) -> AgentSessionsResponse:
+    ensure_profile_exists(agent_id)
+    return session_service.list_agent_sessions(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/sessions/{session_id}', response_model=SessionDetail, tags=['sessions'])
+def get_agent_session(agent_id: str, session_id: str) -> SessionDetail:
+    ensure_profile_exists(agent_id)
+    return session_service.get_session(agent_id, session_id)
 
 
 @app.get('/api/skills', response_model=SkillsResponse, tags=['skills'])

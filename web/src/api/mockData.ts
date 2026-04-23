@@ -132,6 +132,8 @@ export const mockSessions: SessionRecord[] = [
     startedAt: '2026-04-23T06:55:00Z',
     updatedAt: '2026-04-23T07:34:00Z',
     agent: 'Hermes Builder',
+    searchableExcerpt: 'Validate Dokploy deployment logs and dashboard golden path.',
+    messageCount: 14,
   },
   {
     id: 'sess_1420',
@@ -141,6 +143,8 @@ export const mockSessions: SessionRecord[] = [
     startedAt: '2026-04-23T06:40:00Z',
     updatedAt: '2026-04-23T07:21:00Z',
     agent: 'Ops Sentinel',
+    searchableExcerpt: 'Gateway heartbeat jitter investigation and retry-loop triage.',
+    messageCount: 9,
   },
   {
     id: 'sess_1418',
@@ -150,6 +154,8 @@ export const mockSessions: SessionRecord[] = [
     startedAt: '2026-04-23T04:10:00Z',
     updatedAt: '2026-04-23T04:44:00Z',
     agent: 'Sandbox Runner',
+    searchableExcerpt: 'Profile clone smoke test and bootstrap verification.',
+    messageCount: 6,
   },
 ]
 

@@ -15,6 +15,7 @@ import type {
   OverviewResponse,
   Profile,
   RunRecord,
+  SessionDetailRecord,
   SessionRecord,
   Skill,
   SkillBroadcastPayload,
@@ -79,6 +80,36 @@ type BackendSessionsResponse = {
     title?: string | null
     preview?: string | null
     last_active?: string | null
+  }>
+}
+
+type BackendAgentSessionsResponse = {
+  agent_id: string
+  sessions: Array<{
+    id: string
+    title?: string | null
+    status?: 'running' | 'queued' | 'complete' | 'failed' | null
+    started_at?: string | null
+    updated_at?: string | null
+    source?: string | null
+    searchable_excerpt?: string | null
+    message_count?: number | null
+  }>
+  total: number
+}
+
+type BackendSessionDetailResponse = {
+  id: string
+  agent_id: string
+  title?: string | null
+  started_at?: string | null
+  updated_at?: string | null
+  source?: string | null
+  searchable_excerpt?: string | null
+  message_count?: number | null
+  messages: Array<{
+    role?: string | null
+    content?: string | null
   }>
 }
 
@@ -209,7 +240,37 @@ const normalizeSessions = (payload: BackendSessionsResponse): SessionRecord[] =>
     startedAt: session.last_active ?? isoNow(),
     updatedAt: session.last_active ?? isoNow(),
     agent: session.preview ?? 'Hermes session',
+    searchableExcerpt: session.preview ?? undefined,
+    messageCount: 0,
   }))
+
+const normalizeAgentSessions = (payload: BackendAgentSessionsResponse): SessionRecord[] =>
+  payload.sessions.map((session) => ({
+    id: session.id,
+    profileId: payload.agent_id,
+    title: session.title ?? session.id,
+    status: session.status ?? 'complete',
+    startedAt: session.started_at ?? session.updated_at ?? isoNow(),
+    updatedAt: session.updated_at ?? session.started_at ?? isoNow(),
+    agent: session.source ?? 'Hermes session',
+    searchableExcerpt: session.searchable_excerpt ?? undefined,
+    messageCount: session.message_count ?? 0,
+  }))
+
+const normalizeSessionDetail = (payload: BackendSessionDetailResponse): SessionDetailRecord => ({
+  id: payload.id,
+  profileId: payload.agent_id,
+  title: payload.title ?? payload.id,
+  startedAt: payload.started_at ?? payload.updated_at ?? isoNow(),
+  updatedAt: payload.updated_at ?? payload.started_at ?? isoNow(),
+  source: payload.source ?? 'Hermes session',
+  searchableExcerpt: payload.searchable_excerpt ?? undefined,
+  messageCount: payload.message_count ?? payload.messages.length,
+  messages: payload.messages.map((message) => ({
+    role: message.role ?? 'assistant',
+    content: message.content ?? '',
+  })),
+})
 
 const normalizeCronJobs = (payload: BackendCronJobsResponse): CronJob[] =>
   payload.jobs.map((job) => ({
@@ -436,6 +497,47 @@ export const apiClient = {
       const payload = await fetchJson<BackendSessionsResponse>(`/sessions?profile=${encodeURIComponent(activeProfileId)}`)
       return normalizeSessions(payload)
     }, () => structuredClone(mockSessions)),
+
+  getAgentSessions: async (profileId: string, query = ''): Promise<ApiResult<SessionRecord[]>> =>
+    withFallback(async () => {
+      const path = query.trim()
+        ? `/agents/${encodeURIComponent(profileId)}/sessions/search?q=${encodeURIComponent(query.trim())}`
+        : `/agents/${encodeURIComponent(profileId)}/sessions`
+      const payload = await fetchJson<BackendAgentSessionsResponse>(path)
+      return normalizeAgentSessions(payload)
+    }, () =>
+      structuredClone(mockSessions).filter((session) => {
+        if (session.profileId !== profileId) return false
+        if (!query.trim()) return true
+        const needle = query.trim().toLowerCase()
+        return [session.id, session.title, session.agent, session.searchableExcerpt ?? ''].join(' ').toLowerCase().includes(needle)
+      }),
+    ),
+
+  getAgentSession: async (profileId: string, sessionId: string): Promise<ApiResult<SessionDetailRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSessionDetailResponse>(`/agents/${encodeURIComponent(profileId)}/sessions/${encodeURIComponent(sessionId)}`)
+      return normalizeSessionDetail(payload)
+    }, () => {
+      const session = structuredClone(mockSessions).find((item) => item.profileId === profileId && item.id === sessionId)
+      if (!session) {
+        throw new Error('Session not found')
+      }
+      return {
+        id: session.id,
+        profileId: session.profileId,
+        title: session.title,
+        startedAt: session.startedAt,
+        updatedAt: session.updatedAt,
+        source: session.agent,
+        searchableExcerpt: session.searchableExcerpt,
+        messageCount: session.messageCount,
+        messages: [
+          { role: 'user', content: `Open transcript for ${session.title}` },
+          { role: 'assistant', content: `${session.agent} is available as mocked transcript detail.` },
+        ],
+      }
+    }),
 
   getRuns: async (profileId: string): Promise<ApiResult<RunRecord[]>> =>
     withFallback(async () => {
