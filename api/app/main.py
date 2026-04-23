@@ -9,6 +9,9 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.settings import settings
 from app.models import (
+    AgentConfigPatchRequest,
+    AgentConfigReloadResponse,
+    AgentConfigResponse,
     AgentDefaults,
     AgentFiles,
     AgentRuntimeCollection,
@@ -47,6 +50,7 @@ from app.services.hermes_adapter import (
     profile_summary,
     status_payload,
 )
+from app.services.config_service import config_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
 from app.services.session_service import session_service
@@ -256,6 +260,24 @@ def get_logs(
     lines: int = Query(100, ge=1, le=500),
 ) -> LogEntry:
     return LogEntry(**log_payload(profile=profile, log_name=log_name, lines=lines))
+
+
+@app.get('/api/agents/{agent_id}/config', response_model=AgentConfigResponse, tags=['config'])
+def get_agent_config(agent_id: str) -> AgentConfigResponse:
+    ensure_profile_exists(agent_id)
+    return config_service.get_config(agent_id)
+
+
+@app.patch('/api/agents/{agent_id}/config', response_model=AgentConfigResponse, tags=['config'])
+def patch_agent_config(agent_id: str, payload: AgentConfigPatchRequest) -> AgentConfigResponse:
+    ensure_profile_exists(agent_id)
+    return config_service.patch_config(agent_id, payload.model_dump(exclude_none=True))
+
+
+@app.post('/api/agents/{agent_id}/config/reload', response_model=AgentConfigReloadResponse, tags=['config'])
+def reload_agent_config(agent_id: str) -> AgentConfigReloadResponse:
+    ensure_profile_exists(agent_id)
+    return config_service.reload_config(agent_id)
 
 
 @app.get('/api/config/summary', response_model=ConfigSummary, tags=['config'])

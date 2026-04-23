@@ -1,4 +1,5 @@
 import type {
+  AgentConfigRecord,
   CronJob,
   LogEntry,
   OverviewResponse,
@@ -215,6 +216,33 @@ export const mockCronJobs: CronJob[] = [
     nextRun: '2026-04-23T12:00:00Z',
   },
 ]
+
+export const mockAgentConfig: AgentConfigRecord = {
+  agentId: 'default',
+  path: '/opt/data/hermes/profiles/default/config.yaml',
+  effectiveConfig: {
+    display: { personality: 'creative' },
+    model: { default: 'gpt-5.4', provider: 'custom' },
+    providers: { custom: { api_key: '***redacted***', base_url: 'https://providers.gnoviawan.com/v1' } },
+    runtime: { checkpoints_enabled: true, worktree_enabled: false },
+    fallback_providers: ['glm-5.1', 'glm-5'],
+  },
+  profileOverrides: {
+    display: { personality: 'creative' },
+    model: { default: 'gpt-5.4', provider: 'custom' },
+    runtime: { checkpoints_enabled: true, worktree_enabled: false },
+  },
+  runtimeToggles: {
+    checkpointsEnabled: true,
+    worktreeEnabled: false,
+  },
+  editableFields: ['display.personality', 'model.default', 'model.provider', 'runtime.checkpoints_enabled', 'runtime.worktree_enabled'],
+  deferredFields: ['providers', 'fallback_providers'],
+  writeRestrictions: [
+    'Provider credentials and fallback chains remain read-only in Config v1.',
+    'Only personality, model selection, and runtime toggles are writable in this slice.',
+  ],
+}
 
 export const mockLogs: LogEntry[] = [
   {

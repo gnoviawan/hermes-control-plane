@@ -241,6 +241,35 @@ class ConfigSummary(BaseModel):
     summary: dict[str, Any]
 
 
+class RuntimeToggles(BaseModel):
+    checkpoints_enabled: bool = False
+    worktree_enabled: bool = False
+
+
+class AgentConfigResponse(BaseModel):
+    agent_id: str
+    path: str
+    effective_config: dict[str, Any]
+    profile_overrides: dict[str, Any]
+    runtime_toggles: RuntimeToggles
+    editable_fields: list[str]
+    deferred_fields: list[str]
+    write_restrictions: list[str]
+
+
+class AgentConfigPatchRequest(BaseModel):
+    model: dict[str, Any] | None = None
+    display: dict[str, Any] | None = None
+    runtime: dict[str, Any] | None = None
+
+
+class AgentConfigReloadResponse(BaseModel):
+    agent_id: str
+    path: str
+    reloaded: bool
+    message: str
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str
