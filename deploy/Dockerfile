@@ -6,16 +6,19 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-# Final runtime: use Hermes image directly so its bundled CLI + venv remain valid
+# Build a portable app venv separately so we don't mutate Hermes' bundled runtime.
+FROM python:3.13-slim AS api-deps
+WORKDIR /build
+RUN python -m venv --copies /opt/app-venv
+RUN /opt/app-venv/bin/pip install --no-cache-dir fastapi uvicorn pydantic PyYAML
+
+# Final runtime: use Hermes image directly so its bundled CLI + venv remain valid.
 FROM nousresearch/hermes-agent:v2026.4.13
 WORKDIR /app
 
-# Create an isolated API runtime so we don't mutate Hermes' own virtualenv
-RUN /opt/hermes/.venv/bin/python -m venv /app/venv
-
-# Install backend dependencies into the API runtime
+# Copy isolated API runtime and app source
+COPY --from=api-deps /opt/app-venv /app/venv
 COPY api/app ./app
-RUN /app/venv/bin/pip install --no-cache-dir fastapi 'uvicorn[standard]' pydantic PyYAML
 
 # Copy frontend build
 COPY --from=frontend /app/web/dist /app/static
