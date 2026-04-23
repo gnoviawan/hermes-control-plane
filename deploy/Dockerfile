@@ -10,10 +10,12 @@ RUN npm run build
 FROM nousresearch/hermes-agent:v2026.4.13
 WORKDIR /app
 
-# Install backend into Hermes runtime environment
-COPY api/pyproject.toml ./pyproject.toml
+# Create an isolated API runtime so we don't mutate Hermes' own virtualenv
+RUN /opt/hermes/.venv/bin/python -m venv /app/venv
+
+# Install backend dependencies into the API runtime
 COPY api/app ./app
-RUN /opt/hermes/.venv/bin/pip install --no-cache-dir -e .
+RUN /app/venv/bin/pip install --no-cache-dir fastapi 'uvicorn[standard]' pydantic PyYAML
 
 # Copy frontend build
 COPY --from=frontend /app/web/dist /app/static
@@ -29,4 +31,4 @@ ENV HERMES_HOME=/opt/data
 ENV HERMES_BIN=/opt/hermes/.venv/bin/hermes
 ENV HERMES_ROOT=/opt/hermes
 
-CMD ["/opt/hermes/.venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/app/venv/bin/python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
