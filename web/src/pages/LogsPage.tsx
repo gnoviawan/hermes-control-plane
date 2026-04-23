@@ -1,4 +1,4 @@
-import { Card, Empty, Segmented, Space, Table, Tag, Typography } from 'antd'
+import { Card, Empty, Segmented, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
 import { apiClient } from '../api/client'
