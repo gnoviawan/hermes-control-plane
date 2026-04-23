@@ -75,6 +75,20 @@ export interface SessionRecord {
   agent: string
 }
 
+export interface RunRecord {
+  id: string
+  profileId: string
+  sessionId?: string
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'stopped'
+  startedAt: string
+  endedAt?: string
+  model: string
+  provider: string
+  summary: string
+  streamUrl: string
+  eventsUrl: string
+}
+
 export interface CronJob {
   id: string
   name: string

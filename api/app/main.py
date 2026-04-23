@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.settings import settings
@@ -20,6 +20,9 @@ from app.models import (
     CreateProfileRequest,
     HealthResponse,
     LogEntry,
+    RunCreateRequest,
+    RunSummary,
+    RunsResponse,
     SkillBroadcastRequest,
     SkillBroadcastResult,
     SkillsResponse,
@@ -41,6 +44,7 @@ from app.services.hermes_adapter import (
     profile_summary,
     status_payload,
 )
+from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
@@ -119,6 +123,43 @@ def get_agents() -> AgentsResponse:
 def get_agent_runtimes() -> AgentRuntimeCollection:
     runtimes = runtime_registry.list_runtimes()
     return AgentRuntimeCollection(runtimes=runtimes, total=len(runtimes))
+
+
+@app.post('/api/agents/{agent_id}/runs', response_model=RunSummary, status_code=201, tags=['runs'])
+def create_run(agent_id: str, payload: RunCreateRequest) -> RunSummary:
+    ensure_profile_exists(agent_id)
+    return run_service.create_run(agent_id, payload)
+
+
+@app.get('/api/agents/{agent_id}/runs', response_model=RunsResponse, tags=['runs'])
+def list_runs(agent_id: str) -> RunsResponse:
+    ensure_profile_exists(agent_id)
+    runs = run_service.list_runs(agent_id)
+    return RunsResponse(runs=runs, total=len(runs))
+
+
+@app.get('/api/agents/{agent_id}/runs/{run_id}', response_model=RunSummary, tags=['runs'])
+def get_run(agent_id: str, run_id: str) -> RunSummary:
+    ensure_profile_exists(agent_id)
+    return run_service.get_run(agent_id, run_id)
+
+
+@app.post('/api/agents/{agent_id}/runs/{run_id}/stop', response_model=RunSummary, tags=['runs'])
+def stop_run(agent_id: str, run_id: str) -> RunSummary:
+    ensure_profile_exists(agent_id)
+    return run_service.stop_run(agent_id, run_id)
+
+
+@app.get('/api/agents/{agent_id}/runs/{run_id}/stream', tags=['runs'])
+def stream_run(agent_id: str, run_id: str) -> StreamingResponse:
+    ensure_profile_exists(agent_id)
+    return StreamingResponse(iter([run_service.event_stream_payload(agent_id, run_id)]), media_type='text/event-stream')
+
+
+@app.get('/api/agents/{agent_id}/runs/{run_id}/events', tags=['runs'])
+def get_run_events(agent_id: str, run_id: str) -> StreamingResponse:
+    ensure_profile_exists(agent_id)
+    return StreamingResponse(iter([run_service.event_stream_payload(agent_id, run_id)]), media_type='text/event-stream')
 
 
 @app.get('/api/agents/{agent_id}/runtime', response_model=AgentRuntimeSummary, tags=['agents'])
