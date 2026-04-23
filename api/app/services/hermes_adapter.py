@@ -75,6 +75,67 @@ def run_hermes_command(args: list[str], *, profile: str = "default", timeout: in
     )
 
 
+def hermes_command_unavailable(result: CommandResult) -> bool:
+    if result.ok:
+        return False
+    message = (result.stderr or result.stdout or "").lower()
+    return any(token in message for token in ["no such file or directory", "missing hermes binary", "exec format error", "not found"])
+
+
+def _fallback_list_sessions(context: HermesContext) -> list[SessionSummary]:
+    session_dir = context.home / "sessions"
+    if not session_dir.exists():
+        return []
+    sessions: list[SessionSummary] = []
+    for path in sorted(session_dir.glob("session_*.json"), reverse=True):
+        payload = load_json_file(path) or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        sessions.append(
+            SessionSummary(
+                id=payload.get("session_id") or path.stem,
+                title=payload.get("title") or payload.get("session_title"),
+                preview=payload.get("platform") or payload.get("model") or "Filesystem fallback",
+                last_active=payload.get("last_updated") or payload.get("session_start"),
+            )
+        )
+    return sessions
+
+
+def _fallback_list_skills(context: HermesContext) -> list[SkillSummary]:
+    skills_root = context.home / "skills"
+    if not skills_root.exists():
+        return []
+    items: list[SkillSummary] = []
+    for skill_file in sorted(skills_root.glob("**/SKILL.md")):
+        rel = skill_file.relative_to(skills_root)
+        parts = rel.parts
+        category = parts[0] if len(parts) >= 3 else None
+        items.append(
+            SkillSummary(
+                name=skill_file.parent.name,
+                category=category,
+                source="filesystem",
+                trust="local",
+                enabled=True,
+                path=str(skill_file.parent),
+            )
+        )
+    return items
+
+
+def _copy_profile_baseline(source_home: Path, target_home: Path) -> None:
+    target_home.mkdir(parents=True, exist_ok=True)
+    for filename in ["config.yaml", ".env", "SOUL.md", settings.skills_snapshot_name]:
+        source = source_home / filename
+        target = target_home / filename
+        if source.exists():
+            shutil.copy2(source, target)
+    source_skills = source_home / "skills"
+    if source_skills.exists():
+        shutil.copytree(source_skills, target_home / "skills", dirs_exist_ok=True)
+
+
 def active_profile_name() -> str:
     result = run_hermes_command(["profile", "list"])
     if result.ok:
@@ -136,13 +197,24 @@ def create_profile(profile_name: str, clone: bool, clone_all: bool, clone_from: 
     if no_alias:
         args.append("--no-alias")
     result = run_hermes_command(args)
-    if not result.ok:
-        raise HTTPException(status_code=400, detail=result.stderr.strip() or result.stdout.strip() or "Profile creation failed")
-    return result
+    if result.ok:
+        return result
+    if hermes_command_unavailable(result):
+        source_profile = clone_from or "default"
+        source_context = ensure_profile_exists(source_profile)
+        target_home = settings.hermes_home / settings.profiles_dir_name / profile_name
+        if target_home.exists():
+            raise HTTPException(status_code=400, detail=f"Profile '{profile_name}' already exists")
+        _copy_profile_baseline(source_context.home, target_home)
+        return CommandResult(command=args, exit_code=0, stdout=f"Created profile {profile_name} via filesystem fallback", stderr="", ok=True)
+    raise HTTPException(status_code=400, detail=result.stderr.strip() or result.stdout.strip() or "Profile creation failed")
 
 
 def list_sessions(profile: str = "default") -> list[SessionSummary]:
+    context = ensure_profile_exists(profile)
     result = run_hermes_command(["sessions", "list"], profile=profile)
+    if not result.ok and hermes_command_unavailable(result):
+        return _fallback_list_sessions(context)
     if not result.ok:
         raise HTTPException(status_code=500, detail=result.stderr.strip() or "Failed to list sessions")
     sessions: list[SessionSummary] = []
@@ -159,6 +231,8 @@ def list_sessions(profile: str = "default") -> list[SessionSummary]:
 def list_skills(profile: str = "default") -> list[SkillSummary]:
     context = ensure_profile_exists(profile)
     result = run_hermes_command(["skills", "list"], profile=profile)
+    if not result.ok and hermes_command_unavailable(result):
+        return _fallback_list_skills(context)
     if not result.ok:
         raise HTTPException(status_code=500, detail=result.stderr.strip() or "Failed to list skills")
     skills: list[SkillSummary] = []

@@ -81,3 +81,47 @@ def test_run_hermes_command_catches_oserror(monkeypatch) -> None:
     assert result.ok is False
     assert result.exit_code == 1
     assert "missing hermes binary" in result.stderr
+
+
+def test_list_skills_falls_back_to_filesystem(tmp_path, monkeypatch) -> None:
+    skills_root = tmp_path / "skills" / "devops" / "sample-skill"
+    skills_root.mkdir(parents=True)
+    (skills_root / "SKILL.md").write_text("# sample", encoding="utf-8")
+    monkeypatch.setattr(hermes_adapter, "ensure_profile_exists", lambda profile: hermes_adapter.HermesContext(profile=profile))
+    monkeypatch.setattr(hermes_adapter, "settings", SimpleNamespace(hermes_home=tmp_path, profiles_dir_name="profiles", logs_dir_name="logs", cron_dir_name="cron", skills_snapshot_name=".skills_prompt_snapshot.json", command_timeout_seconds=45, hermes_bin=Path("/opt/hermes/.venv/bin/hermes")))
+    monkeypatch.setattr(hermes_adapter, "run_hermes_command", lambda args, profile="default", timeout=None: CommandResult(command=["hermes", *args], exit_code=1, stdout="", stderr="[Errno 2] No such file or directory: '/opt/hermes/.venv/bin/hermes'", ok=False))
+
+    items = hermes_adapter.list_skills("default")
+
+    assert len(items) == 1
+    assert items[0].name == "sample-skill"
+    assert items[0].category == "devops"
+    assert items[0].source == "filesystem"
+
+
+def test_list_sessions_falls_back_to_filesystem(tmp_path, monkeypatch) -> None:
+    session_dir = tmp_path / "sessions"
+    session_dir.mkdir(parents=True)
+    (session_dir / "session_20260422_050952_3edbc6.json").write_text('{"session_id":"20260422_050952_3edbc6","platform":"discord","last_updated":"2026-04-22T05:11:16.853158"}', encoding="utf-8")
+    monkeypatch.setattr(hermes_adapter, "ensure_profile_exists", lambda profile: hermes_adapter.HermesContext(profile=profile))
+    monkeypatch.setattr(hermes_adapter, "settings", SimpleNamespace(hermes_home=tmp_path, profiles_dir_name="profiles", logs_dir_name="logs", cron_dir_name="cron", skills_snapshot_name=".skills_prompt_snapshot.json", command_timeout_seconds=45, hermes_bin=Path("/opt/hermes/.venv/bin/hermes")))
+    monkeypatch.setattr(hermes_adapter, "run_hermes_command", lambda args, profile="default", timeout=None: CommandResult(command=["hermes", *args], exit_code=1, stdout="", stderr="[Errno 2] No such file or directory: '/opt/hermes/.venv/bin/hermes'", ok=False))
+
+    items = hermes_adapter.list_sessions("default")
+
+    assert len(items) == 1
+    assert items[0].id == "20260422_050952_3edbc6"
+    assert items[0].preview == "discord"
+
+
+def test_create_profile_falls_back_to_filesystem_clone(tmp_path, monkeypatch) -> None:
+    (tmp_path / "config.yaml").write_text("model: {}\n", encoding="utf-8")
+    (tmp_path / ".env").write_text("TEST=1\n", encoding="utf-8")
+    (tmp_path / "SOUL.md").write_text("hello\n", encoding="utf-8")
+    monkeypatch.setattr(hermes_adapter, "settings", SimpleNamespace(hermes_home=tmp_path, profiles_dir_name="profiles", logs_dir_name="logs", cron_dir_name="cron", skills_snapshot_name=".skills_prompt_snapshot.json", command_timeout_seconds=45, hermes_bin=Path("/opt/hermes/.venv/bin/hermes")))
+    monkeypatch.setattr(hermes_adapter, "run_hermes_command", lambda args, profile="default", timeout=None: CommandResult(command=["hermes", *args], exit_code=1, stdout="", stderr="[Errno 2] No such file or directory: '/opt/hermes/.venv/bin/hermes'", ok=False))
+
+    result = hermes_adapter.create_profile("demo", clone=False, clone_all=False, clone_from=None, no_alias=False)
+
+    assert result.ok is True
+    assert (tmp_path / "profiles" / "demo" / "config.yaml").exists()
