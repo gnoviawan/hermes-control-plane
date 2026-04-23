@@ -1,5 +1,6 @@
 import {
   ClockCircleOutlined,
+  ConsoleSqlOutlined,
   FileTextOutlined,
   ProfileOutlined,
   RadarChartOutlined,
@@ -19,6 +20,7 @@ const navigationItems: MenuProps['items'] = [
     label: 'Control',
     children: [
       { key: '/overview', label: 'Overview' },
+      { key: '/console', icon: <ConsoleSqlOutlined />, label: 'Console' },
       { key: '/sessions', icon: <RadarChartOutlined />, label: 'Sessions' },
       { key: '/cron-jobs', icon: <ClockCircleOutlined />, label: 'Cron Jobs' },
       { key: '/logs', icon: <FileTextOutlined />, label: 'Logs' },

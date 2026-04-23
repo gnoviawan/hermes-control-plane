@@ -84,6 +84,30 @@ class AgentRuntimeCollection(BaseModel):
     total: int
 
 
+class RunCreateRequest(BaseModel):
+    session_id: str | None = None
+    input: str
+
+
+class RunSummary(BaseModel):
+    id: str
+    agent_id: str
+    session_id: str | None = None
+    status: Literal['queued', 'running', 'completed', 'failed', 'stopped']
+    started_at: str
+    ended_at: str | None = None
+    current_model: str | None = None
+    current_provider: str | None = None
+    summary: str | None = None
+    stream_url: str
+    events_url: str
+
+
+class RunsResponse(BaseModel):
+    runs: list[RunSummary]
+    total: int
+
+
 class CommandResult(BaseModel):
     command: list[str]
     exit_code: int

@@ -3,6 +3,7 @@ import type {
   LogEntry,
   OverviewResponse,
   Profile,
+  RunRecord,
   SessionRecord,
   Skill,
 } from '../types'
@@ -149,6 +150,33 @@ export const mockSessions: SessionRecord[] = [
     startedAt: '2026-04-23T04:10:00Z',
     updatedAt: '2026-04-23T04:44:00Z',
     agent: 'Sandbox Runner',
+  },
+]
+
+export const mockRuns: RunRecord[] = [
+  {
+    id: 'run_2041',
+    profileId: 'default',
+    sessionId: 'sess_1421',
+    status: 'running',
+    startedAt: '2026-04-23T07:30:00Z',
+    model: 'gpt-5.4',
+    provider: 'custom',
+    summary: 'Validate dashboard adapter rollout and capture golden path.',
+    streamUrl: '/api/agents/default/runs/run_2041/stream',
+    eventsUrl: '/api/agents/default/runs/run_2041/events',
+  },
+  {
+    id: 'run_2040',
+    profileId: 'ops',
+    sessionId: 'sess_1420',
+    status: 'queued',
+    startedAt: '2026-04-23T07:20:00Z',
+    model: 'opus',
+    provider: 'airouter',
+    summary: 'Inspect gateway heartbeat jitter and summarize findings.',
+    streamUrl: '/api/agents/ops/runs/run_2040/stream',
+    eventsUrl: '/api/agents/ops/runs/run_2040/events',
   },
 ]
 
