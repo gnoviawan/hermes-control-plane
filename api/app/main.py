@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI, Query
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.core.settings import settings
 from app.models import (
@@ -29,6 +34,7 @@ from app.services.hermes_adapter import (
 
 app = FastAPI(title=settings.app_name, version="0.1.0")
 
+# ── API routes ────────────────────────────────────────────────────────────
 
 @app.get("/api/health", response_model=HealthResponse, tags=["system"])
 def get_health() -> HealthResponse:
@@ -111,3 +117,17 @@ def get_logs(
 @app.get("/api/config/summary", response_model=ConfigSummary, tags=["config"])
 def get_config_summary(profile: str = Query("default")) -> ConfigSummary:
     return ConfigSummary(**config_summary(profile))
+
+
+# ── Frontend static files (SPA catch-all) ────────────────────────────────
+
+STATIC_DIR = Path(os.environ.get("STATIC_DIR", "/app/static"))
+
+# Mount static assets (js, css, images)
+if STATIC_DIR.is_dir():
+    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="static-assets")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        """Catch-all: serve index.html for SPA routing."""
+        return FileResponse(STATIC_DIR / "index.html")
