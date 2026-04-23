@@ -144,6 +144,47 @@ class SessionSummary(BaseModel):
     last_active: str | None = None
 
 
+class SessionListItem(BaseModel):
+    id: str
+    title: str
+    status: Literal['running', 'queued', 'complete', 'failed'] = 'complete'
+    started_at: str | None = None
+    updated_at: str | None = None
+    source: str
+    searchable_excerpt: str | None = None
+    message_count: int = 0
+
+
+class SessionMessage(BaseModel):
+    role: str
+    content: str
+
+
+class SessionDetail(BaseModel):
+    id: str
+    agent_id: str
+    title: str
+    started_at: str | None = None
+    updated_at: str | None = None
+    source: str
+    searchable_excerpt: str | None = None
+    message_count: int = 0
+    messages: list[SessionMessage]
+
+
+class AgentSessionsResponse(BaseModel):
+    agent_id: str
+    sessions: list[SessionListItem]
+    total: int
+
+
+class SessionSearchResponse(BaseModel):
+    agent_id: str
+    query: str
+    sessions: list[SessionListItem]
+    total: int
+
+
 class SkillSummary(BaseModel):
     name: str
     category: str | None = None

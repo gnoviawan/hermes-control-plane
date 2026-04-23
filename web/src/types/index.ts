@@ -73,6 +73,25 @@ export interface SessionRecord {
   startedAt: string
   updatedAt: string
   agent: string
+  searchableExcerpt?: string
+  messageCount: number
+}
+
+export interface SessionMessageRecord {
+  role: string
+  content: string
+}
+
+export interface SessionDetailRecord {
+  id: string
+  profileId: string
+  title: string
+  startedAt: string
+  updatedAt: string
+  source: string
+  searchableExcerpt?: string
+  messageCount: number
+  messages: SessionMessageRecord[]
 }
 
 export interface RunRecord {
