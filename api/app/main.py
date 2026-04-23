@@ -4,14 +4,16 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, Query
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.settings import settings
 from app.models import (
     AgentDefaults,
     AgentFiles,
+    AgentRuntimeCollection,
     AgentRuntimeHints,
+    AgentRuntimeSummary,
     AgentsResponse,
     AgentSummary,
     ConfigSummary,
@@ -39,24 +41,25 @@ from app.services.hermes_adapter import (
     profile_summary,
     status_payload,
 )
+from app.services.runtime_registry import runtime_registry
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
 
 def adapter_descriptor() -> dict[str, str | bool]:
     return {
-        "kind": "hermes-dashboard-api",
-        "hermes_home": str(settings.hermes_home),
-        "hermes_bin": str(settings.hermes_bin),
-        "hermes_bin_exists": settings.hermes_bin.exists(),
+        'kind': 'hermes-dashboard-api',
+        'hermes_home': str(settings.hermes_home),
+        'hermes_bin': str(settings.hermes_bin),
+        'hermes_bin_exists': settings.hermes_bin.exists(),
     }
 
 
 def agent_contract(summary: AgentSummary | object) -> AgentSummary:
     if isinstance(summary, AgentSummary):
         return summary
-    if not hasattr(summary, "name"):
-        raise TypeError("Expected profile summary-like object")
+    if not hasattr(summary, 'name'):
+        raise TypeError('Expected profile summary-like object')
     return AgentSummary(
         id=summary.name,
         name=summary.name,
@@ -69,9 +72,7 @@ def agent_contract(summary: AgentSummary | object) -> AgentSummary:
     )
 
 
-# ── API routes ────────────────────────────────────────────────────────────
-
-@app.get("/api/health", response_model=HealthResponse, tags=["system"])
+@app.get('/api/health', response_model=HealthResponse, tags=['system'])
 def get_health() -> HealthResponse:
     return HealthResponse(
         ok=True,
@@ -82,10 +83,10 @@ def get_health() -> HealthResponse:
     )
 
 
-@app.get("/api/system/health", response_model=SystemHealthResponse, tags=["system"])
+@app.get('/api/system/health', response_model=SystemHealthResponse, tags=['system'])
 def get_system_health() -> SystemHealthResponse:
     return SystemHealthResponse(
-        status="ok",
+        status='ok',
         service=settings.app_name,
         api_version=settings.dashboard_api_version,
         app_version=settings.app_version,
@@ -93,7 +94,7 @@ def get_system_health() -> SystemHealthResponse:
     )
 
 
-@app.get("/api/system/version", response_model=SystemVersionResponse, tags=["system"])
+@app.get('/api/system/version', response_model=SystemVersionResponse, tags=['system'])
 def get_system_version() -> SystemVersionResponse:
     return SystemVersionResponse(
         service=settings.app_name,
@@ -102,33 +103,44 @@ def get_system_version() -> SystemVersionResponse:
     )
 
 
-@app.get("/api/status", response_model=StatusResponse, tags=["system"])
+@app.get('/api/status', response_model=StatusResponse, tags=['system'])
 def get_status() -> StatusResponse:
     return StatusResponse(**status_payload())
 
 
-@app.get("/api/agents", response_model=AgentsResponse, tags=["agents"])
+@app.get('/api/agents', response_model=AgentsResponse, tags=['agents'])
 def get_agents() -> AgentsResponse:
     active = active_profile_name()
     agents = [agent_contract(profile_summary(context, active_profile=active)) for context in profile_contexts()]
     return AgentsResponse(agents=agents, active_agent_id=active, total=len(agents))
 
 
-@app.get("/api/agents/{agent_id}", response_model=AgentSummary, tags=["agents"])
+@app.get('/api/agents/runtimes', response_model=AgentRuntimeCollection, tags=['agents'])
+def get_agent_runtimes() -> AgentRuntimeCollection:
+    runtimes = runtime_registry.list_runtimes()
+    return AgentRuntimeCollection(runtimes=runtimes, total=len(runtimes))
+
+
+@app.get('/api/agents/{agent_id}/runtime', response_model=AgentRuntimeSummary, tags=['agents'])
+def get_agent_runtime(agent_id: str) -> AgentRuntimeSummary:
+    return runtime_registry.get_runtime(agent_id)
+
+
+@app.get('/api/agents/{agent_id}', response_model=AgentSummary, tags=['agents'])
 def get_agent(agent_id: str) -> AgentSummary:
     active = active_profile_name()
     context = ensure_profile_exists(agent_id)
     return agent_contract(profile_summary(context, active_profile=active))
 
 
-@app.get("/api/profiles", tags=["profiles"])
+@app.get('/api/profiles', tags=['profiles'])
 def get_profiles() -> dict:
     active = active_profile_name()
     profiles = [profile_summary(context, active_profile=active).model_dump() for context in profile_contexts()]
-    return {"profiles": profiles, "active_profile": active}
+    return {'profiles': profiles, 'active_profile': active}
 
 
-@app.post("/api/profiles", tags=["profiles"])
+@app.post('/api/profiles', tags=['profiles'])
 def post_profiles(payload: CreateProfileRequest) -> dict:
     result = create_profile(
         profile_name=payload.profile_name,
@@ -137,21 +149,21 @@ def post_profiles(payload: CreateProfileRequest) -> dict:
         clone_from=payload.clone_from,
         no_alias=payload.no_alias,
     )
-    return {"ok": True, "stdout": result.stdout, "stderr": result.stderr}
+    return {'ok': True, 'stdout': result.stdout, 'stderr': result.stderr}
 
 
-@app.get("/api/sessions", tags=["sessions"])
-def get_sessions(profile: str = Query("default")) -> dict:
-    return {"profile": profile, "sessions": [item.model_dump() for item in list_sessions(profile)]}
+@app.get('/api/sessions', tags=['sessions'])
+def get_sessions(profile: str = Query('default')) -> dict:
+    return {'profile': profile, 'sessions': [item.model_dump() for item in list_sessions(profile)]}
 
 
-@app.get("/api/skills", response_model=SkillsResponse, tags=["skills"])
-def get_skills(profile: str = Query("default")) -> SkillsResponse:
+@app.get('/api/skills', response_model=SkillsResponse, tags=['skills'])
+def get_skills(profile: str = Query('default')) -> SkillsResponse:
     skills = list_skills(profile)
     return SkillsResponse(profile=profile, total=len(skills), skills=skills)
 
 
-@app.post("/api/skills/broadcast", response_model=SkillBroadcastResult, tags=["skills"])
+@app.post('/api/skills/broadcast', response_model=SkillBroadcastResult, tags=['skills'])
 def post_skill_broadcast(payload: SkillBroadcastRequest) -> SkillBroadcastResult:
     copied = broadcast_skill_configuration(
         source_profile=payload.source_profile,
@@ -168,35 +180,31 @@ def post_skill_broadcast(payload: SkillBroadcastRequest) -> SkillBroadcastResult
     )
 
 
-@app.get("/api/cron/jobs", tags=["cron"])
-def get_cron_jobs(profile: str = Query("default")) -> dict:
+@app.get('/api/cron/jobs', tags=['cron'])
+def get_cron_jobs(profile: str = Query('default')) -> dict:
     jobs = list_cron_jobs(profile)
-    return {"profile": profile, "jobs": [job.model_dump() for job in jobs], "total": len(jobs)}
+    return {'profile': profile, 'jobs': [job.model_dump() for job in jobs], 'total': len(jobs)}
 
 
-@app.get("/api/logs", response_model=LogEntry, tags=["logs"])
+@app.get('/api/logs', response_model=LogEntry, tags=['logs'])
 def get_logs(
-    profile: str = Query("default"),
-    log_name: str = Query("agent"),
+    profile: str = Query('default'),
+    log_name: str = Query('agent'),
     lines: int = Query(100, ge=1, le=500),
 ) -> LogEntry:
     return LogEntry(**log_payload(profile=profile, log_name=log_name, lines=lines))
 
 
-@app.get("/api/config/summary", response_model=ConfigSummary, tags=["config"])
-def get_config_summary(profile: str = Query("default")) -> ConfigSummary:
+@app.get('/api/config/summary', response_model=ConfigSummary, tags=['config'])
+def get_config_summary(profile: str = Query('default')) -> ConfigSummary:
     return ConfigSummary(**config_summary(profile))
 
 
-# ── Frontend static files (SPA catch-all) ────────────────────────────────
+STATIC_DIR = Path(os.environ.get('STATIC_DIR', '/app/static'))
 
-STATIC_DIR = Path(os.environ.get("STATIC_DIR", "/app/static"))
-
-# Mount static assets (js, css, images)
 if STATIC_DIR.is_dir():
-    app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="static-assets")
+    app.mount('/assets', StaticFiles(directory=STATIC_DIR / 'assets'), name='static-assets')
 
-    @app.get("/{full_path:path}")
+    @app.get('/{full_path:path}')
     def serve_spa(full_path: str):
-        """Catch-all: serve index.html for SPA routing."""
-        return FileResponse(STATIC_DIR / "index.html")
+        return FileResponse(STATIC_DIR / 'index.html')
