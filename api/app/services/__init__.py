@@ -1,3 +1,3 @@
-from . import session_service
+from . import config_service, session_service
 
-__all__ = ["session_service"]
+__all__ = ["config_service", "session_service"]

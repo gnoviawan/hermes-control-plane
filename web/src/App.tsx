@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from './layouts/DashboardLayout'
+import { ConfigPage } from './pages/ConfigPage'
 import { ConsolePage } from './pages/ConsolePage'
 import { CronJobsPage } from './pages/CronJobsPage'
 import { LogsPage } from './pages/LogsPage'
@@ -18,6 +19,7 @@ function App() {
         <Route path="/profiles" element={<ProfilesPage />} />
         <Route path="/skills" element={<SkillsPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
+        <Route path="/config" element={<ConfigPage />} />
         <Route path="/cron-jobs" element={<CronJobsPage />} />
         <Route path="/logs" element={<LogsPage />} />
       </Route>

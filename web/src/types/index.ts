@@ -118,6 +118,20 @@ export interface CronJob {
   nextRun: string
 }
 
+export interface AgentConfigRecord {
+  agentId: string
+  path: string
+  effectiveConfig: Record<string, unknown>
+  profileOverrides: Record<string, unknown>
+  runtimeToggles: {
+    checkpointsEnabled: boolean
+    worktreeEnabled: boolean
+  }
+  editableFields: string[]
+  deferredFields: string[]
+  writeRestrictions: string[]
+}
+
 export interface LogEntry {
   id: string
   timestamp: string

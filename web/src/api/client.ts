@@ -1,4 +1,5 @@
 import {
+  mockAgentConfig,
   mockCronJobs,
   mockLogs,
   mockOverview,
@@ -8,6 +9,7 @@ import {
   mockSkills,
 } from './mockData'
 import type {
+  AgentConfigRecord,
   ApiResult,
   CreateProfilePayload,
   CronJob,
@@ -158,6 +160,20 @@ type BackendConfigSummary = {
   path: string
   keys: string[]
   summary: Record<string, unknown>
+}
+
+type BackendAgentConfigResponse = {
+  agent_id: string
+  path: string
+  effective_config: Record<string, unknown>
+  profile_overrides: Record<string, unknown>
+  runtime_toggles: {
+    checkpoints_enabled: boolean
+    worktree_enabled: boolean
+  }
+  editable_fields: string[]
+  deferred_fields: string[]
+  write_restrictions: string[]
 }
 
 type BackendCreateProfileResponse = {
@@ -318,6 +334,20 @@ const normalizeRuns = (payload: BackendRunsResponse): RunRecord[] =>
       eventsUrl: run.events_url,
     }))
     .sort(compareRunsByStartedAtDesc)
+
+const normalizeAgentConfig = (payload: BackendAgentConfigResponse): AgentConfigRecord => ({
+  agentId: payload.agent_id,
+  path: payload.path,
+  effectiveConfig: payload.effective_config,
+  profileOverrides: payload.profile_overrides,
+  runtimeToggles: {
+    checkpointsEnabled: payload.runtime_toggles.checkpoints_enabled,
+    worktreeEnabled: payload.runtime_toggles.worktree_enabled,
+  },
+  editableFields: payload.editable_fields,
+  deferredFields: payload.deferred_fields,
+  writeRestrictions: payload.write_restrictions,
+})
 
 async function withFallback<T>(run: () => Promise<T>, fallback: () => T): Promise<ApiResult<T>> {
   try {
@@ -575,5 +605,15 @@ export const apiClient = {
       path: '/opt/data/config.yaml',
       keys: [],
       summary: {},
+    })),
+
+  getAgentConfig: async (profileId: string): Promise<ApiResult<AgentConfigRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentConfigResponse>(`/agents/${encodeURIComponent(profileId)}/config`)
+      return normalizeAgentConfig(payload)
+    }, () => ({
+      ...structuredClone(mockAgentConfig),
+      agentId: profileId,
+      path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
     })),
 }
