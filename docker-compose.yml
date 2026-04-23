@@ -5,17 +5,16 @@ services:
     restart: unless-stopped
     command: /bin/sh -lc "sleep infinity"
     volumes:
-      - ai-hermes-abhj7f_hermes_data:/opt/data
-      - ai-hermes-abhj7f_hermes_profiles:/opt/data/profiles
-      - ai-hermes-abhj7f_hermes_agent_src:/opt/hermes
+      - hermes_data:/opt/data
+      - hermes_runtime:/opt/hermes
     networks:
       - hermes-control-net
 
-  control-plane:
+  dashboard:
     build:
       context: .
       dockerfile: deploy/Dockerfile
-    container_name: hermes-control-plane
+    container_name: hermes-control-plane-dashboard
     restart: unless-stopped
     depends_on:
       - hermes
@@ -26,20 +25,15 @@ services:
       HERMES_BIN: /opt/hermes/.venv/bin/hermes
       STATIC_DIR: /app/static
     volumes:
-      - ai-hermes-abhj7f_hermes_data:/opt/data
-      - ai-hermes-abhj7f_hermes_profiles:/opt/data/profiles
-      - ai-hermes-abhj7f_hermes_agent_src:/opt/hermes:ro
+      - hermes_data:/opt/data
+      - hermes_runtime:/opt/hermes:ro
     networks:
       - hermes-control-net
       - dokploy-network
 
 volumes:
-  ai-hermes-abhj7f_hermes_data:
-    external: true
-  ai-hermes-abhj7f_hermes_profiles:
-    external: true
-  ai-hermes-abhj7f_hermes_agent_src:
-    external: true
+  hermes_data:
+  hermes_runtime:
 
 networks:
   hermes-control-net:
