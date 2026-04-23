@@ -6,7 +6,6 @@ services:
     command: /bin/sh -lc "sleep infinity"
     volumes:
       - hermes_data:/opt/data
-      - hermes_runtime:/opt/hermes
     networks:
       - hermes-control-net
 
@@ -26,14 +25,12 @@ services:
       STATIC_DIR: /app/static
     volumes:
       - hermes_data:/opt/data
-      - hermes_runtime:/opt/hermes:ro
     networks:
       - hermes-control-net
       - dokploy-network
 
 volumes:
   hermes_data:
-  hermes_runtime:
 
 networks:
   hermes-control-net:

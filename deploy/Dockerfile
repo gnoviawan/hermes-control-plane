@@ -6,6 +6,9 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
+# Copy a real Hermes runtime into the dashboard image
+FROM nousresearch/hermes-agent:v2026.4.13 AS hermes_runtime
+
 # Build backend + serve
 FROM python:3.13-slim
 WORKDIR /app
@@ -17,6 +20,9 @@ RUN pip install --no-cache-dir -e .
 
 # Copy frontend build
 COPY --from=frontend /app/web/dist /app/static
+
+# Copy Hermes runtime from the standalone Hermes image
+COPY --from=hermes_runtime /opt/hermes /opt/hermes
 
 # Runtime user matches host UID/GID
 ARG WANTED_UID=10000
