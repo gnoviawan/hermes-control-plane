@@ -2,8 +2,11 @@ import {
   mockAgentConfig,
   mockCronJobs,
   mockLogs,
+  mockModels,
   mockOverview,
   mockProfiles,
+  mockProviderRouting,
+  mockProviders,
   mockRuns,
   mockSessions,
   mockSkills,
@@ -14,8 +17,11 @@ import type {
   CreateProfilePayload,
   CronJob,
   LogEntry,
+  ModelCatalogRecord,
   OverviewResponse,
   Profile,
+  ProviderCatalogRecord,
+  ProviderRoutingRecord,
   RunRecord,
   SessionDetailRecord,
   SessionRecord,
@@ -173,6 +179,35 @@ type BackendAgentConfigResponse = {
   }
   editable_fields: string[]
   deferred_fields: string[]
+  write_restrictions: string[]
+}
+
+type BackendProvidersResponse = {
+  providers: Array<{
+    name: string
+    config: Record<string, unknown>
+    has_credentials: boolean
+    source: string
+  }>
+  total: number
+}
+
+type BackendModelsResponse = {
+  models: Array<{
+    id: string
+    provider: string
+    source: string
+  }>
+  total: number
+  default_model?: string | null
+  default_provider?: string | null
+}
+
+type BackendProviderRoutingResponse = {
+  default_provider?: string | null
+  default_model?: string | null
+  fallback_providers: string[]
+  effective_provider_count: number
   write_restrictions: string[]
 }
 
@@ -346,6 +381,29 @@ const normalizeAgentConfig = (payload: BackendAgentConfigResponse): AgentConfigR
   },
   editableFields: payload.editable_fields,
   deferredFields: payload.deferred_fields,
+  writeRestrictions: payload.write_restrictions,
+})
+
+const normalizeProviders = (payload: BackendProvidersResponse): ProviderCatalogRecord[] =>
+  payload.providers.map((provider) => ({
+    name: provider.name,
+    config: provider.config,
+    hasCredentials: provider.has_credentials,
+    source: provider.source,
+  }))
+
+const normalizeModels = (payload: BackendModelsResponse): ModelCatalogRecord[] =>
+  payload.models.map((model) => ({
+    id: model.id,
+    provider: model.provider,
+    source: model.source,
+  }))
+
+const normalizeProviderRouting = (payload: BackendProviderRoutingResponse): ProviderRoutingRecord => ({
+  defaultProvider: payload.default_provider ?? undefined,
+  defaultModel: payload.default_model ?? undefined,
+  fallbackProviders: payload.fallback_providers,
+  effectiveProviderCount: payload.effective_provider_count,
   writeRestrictions: payload.write_restrictions,
 })
 
@@ -616,4 +674,22 @@ export const apiClient = {
       agentId: profileId,
       path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
     })),
+
+  getProviders: async (): Promise<ApiResult<ProviderCatalogRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendProvidersResponse>('/system/providers')
+      return normalizeProviders(payload)
+    }, () => structuredClone(mockProviders)),
+
+  getModels: async (): Promise<ApiResult<ModelCatalogRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendModelsResponse>('/system/models')
+      return normalizeModels(payload)
+    }, () => structuredClone(mockModels)),
+
+  getProviderRouting: async (): Promise<ApiResult<ProviderRoutingRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendProviderRoutingResponse>('/system/provider-routing')
+      return normalizeProviderRouting(payload)
+    }, () => structuredClone(mockProviderRouting)),
 }

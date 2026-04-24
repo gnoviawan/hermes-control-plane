@@ -270,6 +270,45 @@ class AgentConfigReloadResponse(BaseModel):
     message: str
 
 
+class ProviderCatalogItem(BaseModel):
+    name: str
+    config: dict[str, Any]
+    has_credentials: bool = False
+    source: str = 'config'
+
+
+class ProviderCatalogResponse(BaseModel):
+    providers: list[ProviderCatalogItem]
+    total: int
+
+
+class ModelCatalogItem(BaseModel):
+    id: str
+    provider: str
+    source: str = 'config'
+
+
+class ModelCatalogResponse(BaseModel):
+    models: list[ModelCatalogItem]
+    total: int
+    default_model: str | None = None
+    default_provider: str | None = None
+
+
+class ProviderRoutingResponse(BaseModel):
+    default_provider: str | None = None
+    default_model: str | None = None
+    fallback_providers: list[str]
+    effective_provider_count: int = 0
+    write_restrictions: list[str]
+
+
+class ProviderRoutingPatchRequest(BaseModel):
+    default_provider: str | None = None
+    default_model: str | None = None
+    fallback_providers: list[str] | None = None
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str

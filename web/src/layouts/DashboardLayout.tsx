@@ -5,6 +5,7 @@ import {
   ProfileOutlined,
   RadarChartOutlined,
   SettingOutlined,
+  SwapOutlined,
   ToolOutlined,
 } from '@ant-design/icons'
 import { Layout, Menu, Select, Space, Tag, Typography } from 'antd'
@@ -33,6 +34,7 @@ const navigationItems: MenuProps['items'] = [
     children: [
       { key: '/profiles', icon: <ProfileOutlined />, label: 'Profiles' },
       { key: '/config', icon: <SettingOutlined />, label: 'Config' },
+      { key: '/providers-models', icon: <SwapOutlined />, label: 'Providers & Models' },
       { key: '/skills', icon: <ToolOutlined />, label: 'Skills' },
     ],
   },

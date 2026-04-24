@@ -132,6 +132,27 @@ export interface AgentConfigRecord {
   writeRestrictions: string[]
 }
 
+export interface ProviderCatalogRecord {
+  name: string
+  config: Record<string, unknown>
+  hasCredentials: boolean
+  source: string
+}
+
+export interface ModelCatalogRecord {
+  id: string
+  provider: string
+  source: string
+}
+
+export interface ProviderRoutingRecord {
+  defaultProvider?: string
+  defaultModel?: string
+  fallbackProviders: string[]
+  effectiveProviderCount: number
+  writeRestrictions: string[]
+}
+
 export interface LogEntry {
   id: string
   timestamp: string
