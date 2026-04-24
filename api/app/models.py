@@ -342,6 +342,55 @@ class ToolCatalogResponse(BaseModel):
     total: int
 
 
+class ApprovalRequest(BaseModel):
+    id: str
+    agent_id: str
+    run_id: str | None = None
+    session_id: str | None = None
+    command_or_action: str
+    severity: str
+    reason: str | None = None
+    created_at: str | None = None
+    expires_at: str | None = None
+    state: str = 'pending'
+
+
+class ApprovalQueueResponse(BaseModel):
+    agent_id: str
+    approvals: list[ApprovalRequest]
+    total: int
+
+
+class AgentSecurityResponse(BaseModel):
+    agent_id: str
+    approval_policy: str
+    allow_yolo: bool = False
+    dangerous_commands: list[str]
+    allowlists: dict[str, Any] = Field(default_factory=dict)
+    write_restrictions: list[str] = Field(default_factory=list)
+
+
+class AgentSecurityPatchRequest(BaseModel):
+    approval_policy: str | None = None
+    allow_yolo: bool | None = None
+    dangerous_commands: list[str] | None = None
+    allowlists: dict[str, Any] | None = None
+
+
+class SystemSecurityResponse(BaseModel):
+    profiles: list[str]
+    approval_policies: list[str]
+    yolo_enabled_profiles: list[str] = Field(default_factory=list)
+    write_restrictions: list[str] = Field(default_factory=list)
+
+
+class SystemAllowlistsResponse(BaseModel):
+    commands: list[str] = Field(default_factory=list)
+    paths: list[str] = Field(default_factory=list)
+    hosts: list[str] = Field(default_factory=list)
+    profiles: list[str] = Field(default_factory=list)
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str

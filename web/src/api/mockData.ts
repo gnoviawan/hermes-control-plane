@@ -1,5 +1,7 @@
 import type {
   AgentConfigRecord,
+  AgentSecurityRecord,
+  ApprovalRecord,
   CronJob,
   LogEntry,
   ModelCatalogRecord,
@@ -10,6 +12,8 @@ import type {
   RunRecord,
   SessionRecord,
   Skill,
+  SystemAllowlistsRecord,
+  SystemSecurityRecord,
   ToolRecord,
   ToolsetRecord,
 } from '../types'
@@ -313,6 +317,56 @@ export const mockTools: ToolRecord[] = [
     schemaSummary: { type: 'mcp' },
   },
 ]
+
+export const mockApprovals: ApprovalRecord[] = [
+  {
+    id: 'approval-1',
+    agentId: 'default',
+    runId: 'run_2041',
+    sessionId: 'sess_1421',
+    commandOrAction: 'rm -rf /tmp/test',
+    severity: 'high',
+    reason: 'Dangerous command',
+    createdAt: '2026-04-23T07:29:00Z',
+    expiresAt: '2026-04-23T07:45:00Z',
+    state: 'pending',
+  },
+]
+
+export const mockAgentSecurity: AgentSecurityRecord = {
+  agentId: 'default',
+  approvalPolicy: 'strict',
+  allowYolo: false,
+  dangerousCommands: ['rm -rf', 'sudo'],
+  allowlists: {
+    commands: ['git status', 'git diff'],
+    paths: ['/tmp/hermes-safe'],
+    secrets: {
+      api_key: '***redacted***',
+    },
+  },
+  writeRestrictions: [
+    'Secrets remain redacted in security surfaces.',
+    'Approval queue entries are read-only from the dashboard in v1.',
+  ],
+}
+
+export const mockSystemSecurity: SystemSecurityRecord = {
+  profiles: ['default', 'ops'],
+  approvalPolicies: ['on-request', 'strict'],
+  yoloEnabledProfiles: ['ops'],
+  writeRestrictions: [
+    'Secrets remain redacted in security surfaces.',
+    'Approval queue entries are read-only from the dashboard in v1.',
+  ],
+}
+
+export const mockSystemAllowlists: SystemAllowlistsRecord = {
+  commands: ['git diff', 'git status'],
+  paths: ['/tmp/hermes-safe'],
+  hosts: [],
+  profiles: ['default', 'ops'],
+}
 
 export const mockLogs: LogEntry[] = [
   {

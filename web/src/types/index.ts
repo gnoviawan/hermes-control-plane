@@ -170,6 +170,42 @@ export interface ToolRecord {
   schemaSummary: Record<string, unknown>
 }
 
+export interface ApprovalRecord {
+  id: string
+  agentId: string
+  runId?: string
+  sessionId?: string
+  commandOrAction: string
+  severity: string
+  reason?: string
+  createdAt?: string
+  expiresAt?: string
+  state: string
+}
+
+export interface AgentSecurityRecord {
+  agentId: string
+  approvalPolicy: string
+  allowYolo: boolean
+  dangerousCommands: string[]
+  allowlists: Record<string, unknown>
+  writeRestrictions: string[]
+}
+
+export interface SystemSecurityRecord {
+  profiles: string[]
+  approvalPolicies: string[]
+  yoloEnabledProfiles: string[]
+  writeRestrictions: string[]
+}
+
+export interface SystemAllowlistsRecord {
+  commands: string[]
+  paths: string[]
+  hosts: string[]
+  profiles: string[]
+}
+
 export interface LogEntry {
   id: string
   timestamp: string
