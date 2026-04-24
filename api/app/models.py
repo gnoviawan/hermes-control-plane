@@ -391,6 +391,48 @@ class SystemAllowlistsResponse(BaseModel):
     profiles: list[str] = Field(default_factory=list)
 
 
+class AgentCronJob(BaseModel):
+    id: str
+    agent_id: str
+    name: str
+    prompt_preview: str | None = None
+    skills: list[str] = Field(default_factory=list)
+    schedule: str
+    next_run_at: str | None = None
+    last_run_at: str | None = None
+    status: str
+    last_status: str | None = None
+    deliver_target: str | None = None
+
+
+class AgentCronJobsResponse(BaseModel):
+    agent_id: str
+    jobs: list[AgentCronJob]
+    total: int
+
+
+class AgentCronJobCreateRequest(BaseModel):
+    name: str
+    prompt: str | None = None
+    skills: list[str] = Field(default_factory=list)
+    schedule: str
+    deliver_target: str | None = None
+
+
+class AgentCronJobPatchRequest(BaseModel):
+    name: str | None = None
+    prompt: str | None = None
+    skills: list[str] | None = None
+    schedule: str | None = None
+    deliver_target: str | None = None
+    enabled: bool | None = None
+
+
+class AgentCronJobDeleteResponse(BaseModel):
+    ok: bool
+    id: str
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str

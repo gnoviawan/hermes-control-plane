@@ -111,11 +111,16 @@ export interface RunRecord {
 export interface CronJob {
   id: string
   name: string
-  schedule: string
   profileId: string
+  promptPreview?: string
+  skills: string[]
+  schedule: string
   enabled: boolean
-  lastRun: string
-  nextRun: string
+  status: string
+  lastStatus?: string
+  lastRun?: string
+  nextRun?: string
+  deliverTarget?: string
 }
 
 export interface AgentConfigRecord {

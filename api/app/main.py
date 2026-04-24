@@ -12,6 +12,11 @@ from app.models import (
     AgentConfigPatchRequest,
     AgentConfigReloadResponse,
     AgentConfigResponse,
+    AgentCronJob,
+    AgentCronJobCreateRequest,
+    AgentCronJobDeleteResponse,
+    AgentCronJobPatchRequest,
+    AgentCronJobsResponse,
     AgentDefaults,
     AgentFiles,
     AgentRuntimeCollection,
@@ -64,6 +69,7 @@ from app.services.hermes_adapter import (
     status_payload,
 )
 from app.services.config_service import config_service
+from app.services.cron_service import cron_service
 from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
@@ -343,6 +349,54 @@ def post_skill_broadcast(payload: SkillBroadcastRequest) -> SkillBroadcastResult
 def get_cron_jobs(profile: str = Query('default')) -> dict:
     jobs = list_cron_jobs(profile)
     return {'profile': profile, 'jobs': [job.model_dump() for job in jobs], 'total': len(jobs)}
+
+
+@app.get('/api/agents/{agent_id}/cron/jobs', response_model=AgentCronJobsResponse, tags=['cron'])
+def list_agent_cron_jobs(agent_id: str) -> AgentCronJobsResponse:
+    ensure_profile_exists(agent_id)
+    return cron_service.list_jobs(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/cron/jobs', response_model=AgentCronJob, tags=['cron'])
+def create_agent_cron_job(agent_id: str, payload: AgentCronJobCreateRequest) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.create_job(agent_id, payload)
+
+
+@app.get('/api/agents/{agent_id}/cron/jobs/{job_id}', response_model=AgentCronJob, tags=['cron'])
+def get_agent_cron_job(agent_id: str, job_id: str) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.get_job(agent_id, job_id)
+
+
+@app.patch('/api/agents/{agent_id}/cron/jobs/{job_id}', response_model=AgentCronJob, tags=['cron'])
+def patch_agent_cron_job(agent_id: str, job_id: str, payload: AgentCronJobPatchRequest) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.patch_job(agent_id, job_id, payload)
+
+
+@app.delete('/api/agents/{agent_id}/cron/jobs/{job_id}', response_model=AgentCronJobDeleteResponse, tags=['cron'])
+def delete_agent_cron_job(agent_id: str, job_id: str) -> AgentCronJobDeleteResponse:
+    ensure_profile_exists(agent_id)
+    return cron_service.delete_job(agent_id, job_id)
+
+
+@app.post('/api/agents/{agent_id}/cron/jobs/{job_id}/trigger', response_model=AgentCronJob, tags=['cron'])
+def trigger_agent_cron_job(agent_id: str, job_id: str) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.trigger_job(agent_id, job_id)
+
+
+@app.post('/api/agents/{agent_id}/cron/jobs/{job_id}/pause', response_model=AgentCronJob, tags=['cron'])
+def pause_agent_cron_job(agent_id: str, job_id: str) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.pause_job(agent_id, job_id)
+
+
+@app.post('/api/agents/{agent_id}/cron/jobs/{job_id}/resume', response_model=AgentCronJob, tags=['cron'])
+def resume_agent_cron_job(agent_id: str, job_id: str) -> AgentCronJob:
+    ensure_profile_exists(agent_id)
+    return cron_service.resume_job(agent_id, job_id)
 
 
 @app.get('/api/logs', response_model=LogEntry, tags=['logs'])
