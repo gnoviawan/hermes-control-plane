@@ -5,7 +5,14 @@ from typing import Any
 
 import yaml
 
-from app.models import AgentConfigReloadResponse, AgentConfigResponse, RuntimeToggles
+from app.models import (
+    AgentConfigReloadResponse,
+    AgentConfigResponse,
+    AgentConfigSchemaResponse,
+    ConfigFieldDescriptor,
+    ConfigSectionDescriptor,
+    RuntimeToggles,
+)
 from app.services.hermes_adapter import ensure_profile_exists
 from app.utils import load_yaml_file, redact_secrets
 
@@ -22,6 +29,87 @@ WRITE_RESTRICTIONS = [
     'Only display.personality, model.default/provider, and runtime toggles are writable in this slice.',
 ]
 
+SCHEMA_SECTIONS = [
+    {
+        'key': 'model',
+        'label': 'Model',
+        'fields': [
+            {
+                'key': 'model.default',
+                'label': 'Default model',
+                'description': 'Primary model used for new runs unless overridden.',
+                'type': 'string',
+                'status': 'editable',
+                'impact': 'new_session',
+            },
+            {
+                'key': 'model.provider',
+                'label': 'Default provider',
+                'description': 'Provider used for new runs unless overridden.',
+                'type': 'string',
+                'status': 'editable',
+                'impact': 'new_session',
+            },
+        ],
+    },
+    {
+        'key': 'display',
+        'label': 'Display',
+        'fields': [
+            {
+                'key': 'display.personality',
+                'label': 'Personality',
+                'description': 'Active personality preset for the profile.',
+                'type': 'string',
+                'status': 'editable',
+                'impact': 'new_session',
+            },
+        ],
+    },
+    {
+        'key': 'runtime',
+        'label': 'Runtime',
+        'fields': [
+            {
+                'key': 'runtime.checkpoints_enabled',
+                'label': 'Checkpoints enabled',
+                'description': 'Enable checkpoint creation during agent execution.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'reload',
+            },
+            {
+                'key': 'runtime.worktree_enabled',
+                'label': 'Worktree enabled',
+                'description': 'Enable isolated git worktree behavior for execution.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'reload',
+            },
+        ],
+    },
+]
+
+DEFERRED_SCHEMA_FIELDS = [
+    {
+        'key': 'providers.custom.api_key',
+        'label': 'Provider API key',
+        'description': 'Credential-bearing provider settings stay deferred in config schema v1.',
+        'type': 'string',
+        'status': 'deferred',
+        'impact': 'restart',
+        'sensitive': True,
+    },
+    {
+        'key': 'fallback_providers',
+        'label': 'Fallback providers',
+        'description': 'Fallback chains remain read-only until a later config editor slice.',
+        'type': 'list',
+        'status': 'deferred',
+        'impact': 'new_session',
+    },
+]
+
 
 class ConfigService:
     def get_config(self, agent_id: str) -> AgentConfigResponse:
@@ -29,6 +117,33 @@ class ConfigService:
         config_path = context.home / 'config.yaml'
         config = load_yaml_file(config_path)
         return self._response(agent_id, config_path, config)
+
+    def get_schema(self, agent_id: str) -> AgentConfigSchemaResponse:
+        context = ensure_profile_exists(agent_id)
+        config_path = context.home / 'config.yaml'
+        config = load_yaml_file(config_path)
+
+        sections = [
+            ConfigSectionDescriptor(
+                key=section['key'],
+                label=section['label'],
+                fields=[self._field_descriptor(config, field) for field in section['fields']],
+            )
+            for section in SCHEMA_SECTIONS
+        ]
+        deferred_fields = [self._field_descriptor(config, field) for field in DEFERRED_SCHEMA_FIELDS]
+
+        return AgentConfigSchemaResponse(
+            agent_id=agent_id,
+            path=str(config_path),
+            sections=sections,
+            deferred_fields=deferred_fields,
+            field_count=sum(len(section.fields) for section in sections) + len(deferred_fields),
+            editable_count=sum(1 for section in sections for field in section.fields if field.status == 'editable'),
+            deferred_count=sum(1 for field in deferred_fields if field.status == 'deferred'),
+            forbidden_count=sum(1 for section in sections for field in section.fields if field.status == 'forbidden')
+            + sum(1 for field in deferred_fields if field.status == 'forbidden'),
+        )
 
     def patch_config(self, agent_id: str, payload: dict[str, Any]) -> AgentConfigResponse:
         context = ensure_profile_exists(agent_id)
@@ -81,6 +196,30 @@ class ConfigService:
             deferred_fields=DEFERRED_FIELDS,
             write_restrictions=WRITE_RESTRICTIONS,
         )
+
+    def _field_descriptor(self, config: dict[str, Any], definition: dict[str, Any]) -> ConfigFieldDescriptor:
+        value = self._get_path_value(config, definition['key'])
+        if definition.get('sensitive') and value is not None:
+            value = '***redacted***'
+        return ConfigFieldDescriptor(
+            key=definition['key'],
+            label=definition['label'],
+            description=definition['description'],
+            type=definition['type'],
+            status=definition['status'],
+            impact=definition['impact'],
+            value=value,
+            sensitive=bool(definition.get('sensitive', False)),
+            options=list(definition.get('options', [])),
+        )
+
+    def _get_path_value(self, config: dict[str, Any], dotted_key: str) -> Any:
+        current: Any = config
+        for part in dotted_key.split('.'):
+            if not isinstance(current, dict) or part not in current:
+                return None
+            current = current[part]
+        return current
 
 
 config_service = ConfigService()

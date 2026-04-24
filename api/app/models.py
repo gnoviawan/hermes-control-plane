@@ -370,6 +370,35 @@ class AgentConfigResponse(BaseModel):
     write_restrictions: list[str]
 
 
+class ConfigFieldDescriptor(BaseModel):
+    key: str
+    label: str
+    description: str
+    type: str
+    status: str
+    impact: str
+    value: Any = None
+    sensitive: bool = False
+    options: list[str] = Field(default_factory=list)
+
+
+class ConfigSectionDescriptor(BaseModel):
+    key: str
+    label: str
+    fields: list[ConfigFieldDescriptor]
+
+
+class AgentConfigSchemaResponse(BaseModel):
+    agent_id: str
+    path: str
+    sections: list[ConfigSectionDescriptor]
+    deferred_fields: list[ConfigFieldDescriptor]
+    field_count: int
+    editable_count: int
+    deferred_count: int
+    forbidden_count: int
+
+
 class AgentConfigPatchRequest(BaseModel):
     model: dict[str, Any] | None = None
     display: dict[str, Any] | None = None

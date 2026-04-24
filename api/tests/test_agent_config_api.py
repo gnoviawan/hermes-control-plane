@@ -105,3 +105,51 @@ def test_agent_config_reload_endpoint_returns_reload_status(tmp_path, monkeypatc
         'reloaded': True,
         'message': 'Config reload requested',
     }
+
+
+def test_agent_config_schema_endpoint_returns_grouped_field_metadata(tmp_path, monkeypatch) -> None:
+    from app.services import config_service as config_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    write_config(
+        config_path,
+        {
+            'model': {'default': 'gpt-5.4', 'provider': 'custom'},
+            'display': {'personality': 'creative'},
+            'providers': {'custom': {'api_key': 'super-secret'}},
+            'runtime': {'checkpoints_enabled': True, 'worktree_enabled': False},
+            'fallback_providers': ['backup-a'],
+        },
+    )
+
+    monkeypatch.setattr(config_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.get('/api/agents/default/config/schema')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['agent_id'] == 'default'
+    assert payload['field_count'] >= 5
+    assert payload['editable_count'] >= 5
+    assert payload['deferred_count'] >= 2
+    assert payload['forbidden_count'] == 0
+
+    sections = {section['key']: section for section in payload['sections']}
+    assert {'model', 'display', 'runtime'} <= sections.keys()
+
+    model_fields = {field['key']: field for field in sections['model']['fields']}
+    assert model_fields['model.default']['status'] == 'editable'
+    assert model_fields['model.default']['type'] == 'string'
+    assert model_fields['model.default']['value'] == 'gpt-5.4'
+    assert model_fields['model.provider']['impact'] == 'new_session'
+
+    runtime_fields = {field['key']: field for field in sections['runtime']['fields']}
+    assert runtime_fields['runtime.checkpoints_enabled']['type'] == 'boolean'
+    assert runtime_fields['runtime.checkpoints_enabled']['value'] is True
+
+    deferred_fields = {field['key']: field for field in payload['deferred_fields']}
+    assert deferred_fields['providers.custom.api_key']['status'] == 'deferred'
+    assert deferred_fields['providers.custom.api_key']['sensitive'] is True
+    assert deferred_fields['providers.custom.api_key']['value'] == '***redacted***'
+    assert deferred_fields['fallback_providers']['value'] == ['backup-a']
