@@ -1,5 +1,6 @@
 import {
   mockAgentConfig,
+  mockAgentConfigSchema,
   mockAgentSecurity,
   mockApprovals,
   mockCheckpoints,
@@ -35,6 +36,7 @@ import {
 } from './mockData'
 import type {
   AgentConfigRecord,
+  AgentConfigSchemaRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApiResult,
@@ -331,6 +333,41 @@ type BackendAgentConfigResponse = {
   editable_fields: string[]
   deferred_fields: string[]
   write_restrictions: string[]
+}
+
+type BackendAgentConfigSchemaResponse = {
+  agent_id: string
+  path: string
+  sections: Array<{
+    key: string
+    label: string
+    fields: Array<{
+      key: string
+      label: string
+      description: string
+      type: string
+      status: 'editable' | 'deferred' | 'forbidden'
+      impact: string
+      value?: unknown
+      sensitive?: boolean
+      options?: string[]
+    }>
+  }>
+  deferred_fields: Array<{
+    key: string
+    label: string
+    description: string
+    type: string
+    status: 'editable' | 'deferred' | 'forbidden'
+    impact: string
+    value?: unknown
+    sensitive?: boolean
+    options?: string[]
+  }>
+  field_count: number
+  editable_count: number
+  deferred_count: number
+  forbidden_count: number
 }
 
 type BackendProvidersResponse = {
@@ -820,6 +857,33 @@ const normalizeAgentConfig = (payload: BackendAgentConfigResponse): AgentConfigR
   editableFields: payload.editable_fields,
   deferredFields: payload.deferred_fields,
   writeRestrictions: payload.write_restrictions,
+})
+
+const normalizeConfigField = (field: BackendAgentConfigSchemaResponse['sections'][number]['fields'][number]) => ({
+  key: field.key,
+  label: field.label,
+  description: field.description,
+  type: field.type,
+  status: field.status,
+  impact: field.impact,
+  value: field.value,
+  sensitive: Boolean(field.sensitive),
+  options: field.options ?? [],
+})
+
+const normalizeAgentConfigSchema = (payload: BackendAgentConfigSchemaResponse): AgentConfigSchemaRecord => ({
+  agentId: payload.agent_id,
+  path: payload.path,
+  sections: payload.sections.map((section) => ({
+    key: section.key,
+    label: section.label,
+    fields: section.fields.map(normalizeConfigField),
+  })),
+  deferredFields: payload.deferred_fields.map(normalizeConfigField),
+  fieldCount: payload.field_count,
+  editableCount: payload.editable_count,
+  deferredCount: payload.deferred_count,
+  forbiddenCount: payload.forbidden_count,
 })
 
 const normalizeProviders = (payload: BackendProvidersResponse): ProviderCatalogRecord[] =>
@@ -1312,6 +1376,16 @@ export const apiClient = {
       return normalizeAgentConfig(payload)
     }, () => ({
       ...structuredClone(mockAgentConfig),
+      agentId: profileId,
+      path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
+    })),
+
+  getAgentConfigSchema: async (profileId: string): Promise<ApiResult<AgentConfigSchemaRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentConfigSchemaResponse>(`/agents/${encodeURIComponent(profileId)}/config/schema`)
+      return normalizeAgentConfigSchema(payload)
+    }, () => ({
+      ...structuredClone(mockAgentConfigSchema),
       agentId: profileId,
       path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
     })),

@@ -137,6 +137,35 @@ export interface CronJob {
   deliverTarget?: string
 }
 
+export interface AgentConfigFieldRecord {
+  key: string
+  label: string
+  description: string
+  type: string
+  status: 'editable' | 'deferred' | 'forbidden'
+  impact: string
+  value?: unknown
+  sensitive: boolean
+  options: string[]
+}
+
+export interface AgentConfigSectionRecord {
+  key: string
+  label: string
+  fields: AgentConfigFieldRecord[]
+}
+
+export interface AgentConfigSchemaRecord {
+  agentId: string
+  path: string
+  sections: AgentConfigSectionRecord[]
+  deferredFields: AgentConfigFieldRecord[]
+  fieldCount: number
+  editableCount: number
+  deferredCount: number
+  forbiddenCount: number
+}
+
 export interface AgentConfigRecord {
   agentId: string
   path: string
