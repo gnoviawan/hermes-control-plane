@@ -39,6 +39,10 @@ from app.models import (
     StatusResponse,
     SystemHealthResponse,
     SystemVersionResponse,
+    ToolCatalogResponse,
+    ToolInfo,
+    ToolsetPatchRequest,
+    ToolsetResponse,
 )
 from app.services.hermes_adapter import (
     active_profile_name,
@@ -59,6 +63,7 @@ from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
 from app.services.session_service import session_service
+from app.services.tool_service import tool_service
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -138,6 +143,16 @@ def get_system_provider_routing() -> ProviderRoutingResponse:
 @app.patch('/api/system/provider-routing', response_model=ProviderRoutingResponse, tags=['system'])
 def patch_system_provider_routing(payload: ProviderRoutingPatchRequest) -> ProviderRoutingResponse:
     return provider_service.patch_routing(payload.model_dump(exclude_none=True))
+
+
+@app.get('/api/system/toolsets', response_model=ToolsetResponse, tags=['system'])
+def get_system_toolsets() -> ToolsetResponse:
+    return tool_service.list_system_toolsets()
+
+
+@app.get('/api/system/tools', response_model=ToolCatalogResponse, tags=['system'])
+def get_system_tools() -> ToolCatalogResponse:
+    return tool_service.list_system_tools()
 
 
 @app.get('/api/status', response_model=StatusResponse, tags=['system'])
@@ -229,6 +244,24 @@ def post_profiles(payload: CreateProfileRequest) -> dict:
 @app.get('/api/sessions', tags=['sessions'])
 def get_sessions(profile: str = Query('default')) -> dict:
     return {'profile': profile, 'sessions': [item.model_dump() for item in list_sessions(profile)]}
+
+
+@app.get('/api/agents/{agent_id}/toolsets', response_model=ToolsetResponse, tags=['tools'])
+def list_agent_toolsets(agent_id: str) -> ToolsetResponse:
+    ensure_profile_exists(agent_id)
+    return tool_service.list_agent_toolsets(agent_id)
+
+
+@app.patch('/api/agents/{agent_id}/toolsets', response_model=ToolsetResponse, tags=['tools'])
+def patch_agent_toolsets(agent_id: str, payload: ToolsetPatchRequest) -> ToolsetResponse:
+    ensure_profile_exists(agent_id)
+    return tool_service.patch_agent_toolsets(agent_id, payload)
+
+
+@app.get('/api/agents/{agent_id}/tools', response_model=ToolCatalogResponse, tags=['tools'])
+def list_agent_tools(agent_id: str) -> ToolCatalogResponse:
+    ensure_profile_exists(agent_id)
+    return tool_service.list_agent_tools(agent_id)
 
 
 @app.get('/api/agents/{agent_id}/sessions/search', response_model=SessionSearchResponse, tags=['sessions'])

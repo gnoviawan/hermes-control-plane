@@ -9,6 +9,7 @@ import { ProfilesPage } from './pages/ProfilesPage'
 import { ProvidersPage } from './pages/ProvidersPage'
 import { SessionsPage } from './pages/SessionsPage'
 import { SkillsPage } from './pages/SkillsPage'
+import { ToolsPage } from './pages/ToolsPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/console" element={<ConsolePage />} />
         <Route path="/profiles" element={<ProfilesPage />} />
         <Route path="/skills" element={<SkillsPage />} />
+        <Route path="/tools" element={<ToolsPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/config" element={<ConfigPage />} />
         <Route path="/providers-models" element={<ProvidersPage />} />

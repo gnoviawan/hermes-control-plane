@@ -309,6 +309,39 @@ class ProviderRoutingPatchRequest(BaseModel):
     fallback_providers: list[str] | None = None
 
 
+class ToolsetInfo(BaseModel):
+    name: str
+    source: str
+    enabled: bool = True
+    tool_count: int = 0
+
+
+class ToolsetResponse(BaseModel):
+    agent_id: str
+    toolsets: list[ToolsetInfo]
+    total: int
+
+
+class ToolsetPatchRequest(BaseModel):
+    toolsets: list[str]
+
+
+class ToolInfo(BaseModel):
+    name: str
+    toolset: str
+    source_type: str
+    source_id: str | None = None
+    available: bool = True
+    availability_reason: str | None = None
+    schema_summary: dict[str, Any] = Field(default_factory=dict)
+
+
+class ToolCatalogResponse(BaseModel):
+    agent_id: str
+    tools: list[ToolInfo]
+    total: int
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str

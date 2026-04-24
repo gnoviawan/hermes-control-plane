@@ -10,6 +10,8 @@ import {
   mockRuns,
   mockSessions,
   mockSkills,
+  mockTools,
+  mockToolsets,
 } from './mockData'
 import type {
   AgentConfigRecord,
@@ -28,6 +30,8 @@ import type {
   Skill,
   SkillBroadcastPayload,
   ToggleSkillPayload,
+  ToolRecord,
+  ToolsetRecord,
 } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -209,6 +213,31 @@ type BackendProviderRoutingResponse = {
   fallback_providers: string[]
   effective_provider_count: number
   write_restrictions: string[]
+}
+
+type BackendToolsetsResponse = {
+  agent_id: string
+  toolsets: Array<{
+    name: string
+    source: 'builtin' | 'mcp'
+    enabled: boolean
+    tool_count: number
+  }>
+  total: number
+}
+
+type BackendToolsResponse = {
+  agent_id: string
+  tools: Array<{
+    name: string
+    toolset: string
+    source_type: 'builtin' | 'mcp'
+    source_id?: string | null
+    available: boolean
+    availability_reason?: string | null
+    schema_summary: Record<string, unknown>
+  }>
+  total: number
 }
 
 type BackendCreateProfileResponse = {
@@ -406,6 +435,25 @@ const normalizeProviderRouting = (payload: BackendProviderRoutingResponse): Prov
   effectiveProviderCount: payload.effective_provider_count,
   writeRestrictions: payload.write_restrictions,
 })
+
+const normalizeToolsets = (payload: BackendToolsetsResponse): ToolsetRecord[] =>
+  payload.toolsets.map((toolset) => ({
+    name: toolset.name,
+    source: toolset.source,
+    enabled: toolset.enabled,
+    toolCount: toolset.tool_count,
+  }))
+
+const normalizeTools = (payload: BackendToolsResponse): ToolRecord[] =>
+  payload.tools.map((tool) => ({
+    name: tool.name,
+    toolset: tool.toolset,
+    sourceType: tool.source_type,
+    sourceId: tool.source_id ?? undefined,
+    available: tool.available,
+    availabilityReason: tool.availability_reason ?? undefined,
+    schemaSummary: tool.schema_summary,
+  }))
 
 async function withFallback<T>(run: () => Promise<T>, fallback: () => T): Promise<ApiResult<T>> {
   try {
@@ -692,4 +740,16 @@ export const apiClient = {
       const payload = await fetchJson<BackendProviderRoutingResponse>('/system/provider-routing')
       return normalizeProviderRouting(payload)
     }, () => structuredClone(mockProviderRouting)),
+
+  getAgentToolsets: async (profileId: string): Promise<ApiResult<ToolsetRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendToolsetsResponse>(`/agents/${encodeURIComponent(profileId)}/toolsets`)
+      return normalizeToolsets(payload)
+    }, () => structuredClone(mockToolsets)),
+
+  getAgentTools: async (profileId: string): Promise<ApiResult<ToolRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendToolsResponse>(`/agents/${encodeURIComponent(profileId)}/tools`)
+      return normalizeTools(payload)
+    }, () => structuredClone(mockTools)),
 }

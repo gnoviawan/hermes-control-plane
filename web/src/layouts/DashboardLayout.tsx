@@ -24,6 +24,7 @@ const navigationItems: MenuProps['items'] = [
       { key: '/overview', label: 'Overview' },
       { key: '/console', icon: <ConsoleSqlOutlined />, label: 'Console' },
       { key: '/sessions', icon: <RadarChartOutlined />, label: 'Sessions' },
+      { key: '/tools', icon: <ToolOutlined />, label: 'Tools' },
       { key: '/cron-jobs', icon: <ClockCircleOutlined />, label: 'Cron Jobs' },
       { key: '/logs', icon: <FileTextOutlined />, label: 'Logs' },
     ],
