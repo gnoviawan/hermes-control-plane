@@ -38,6 +38,8 @@ const WorkspacePage = lazy(() => import('./pages/WorkspacePage').then((module) =
 
 type RouteGroup = 'control-group' | 'settings-group'
 
+const allowedRouteGroups: RouteGroup[] = ['control-group', 'settings-group']
+
 type ManifestRoute = {
   key: string
   path: string
@@ -95,6 +97,15 @@ const groupLabels: Record<RouteGroup, string> = {
 
 const manifestRoutes = routeManifest.routes as ManifestRoute[]
 
+const countDuplicates = (values: string[]): string[] =>
+  values.filter((value, index) => values.indexOf(value) !== index).filter((value, index, items) => items.indexOf(value) === index)
+
+export const duplicateRouteKeys = countDuplicates(manifestRoutes.map((route) => route.key))
+export const duplicateRoutePaths = countDuplicates(manifestRoutes.map((route) => route.path))
+export const invalidRouteGroups = manifestRoutes
+  .map((route) => route.group)
+  .filter((group, index, groups) => !allowedRouteGroups.includes(group) && groups.indexOf(group) === index)
+
 export const missingComponentKeys = manifestRoutes.filter((route) => !(route.key in componentByKey)).map((route) => route.key)
 export const missingIconKeys = manifestRoutes
   .filter((route) => route.key !== 'overview' && !(route.key in iconByKey))
@@ -102,6 +113,18 @@ export const missingIconKeys = manifestRoutes
 
 export function assertRouteRegistryCoverage(): void {
   const problems: string[] = []
+
+  if (duplicateRouteKeys.length) {
+    problems.push(`duplicate route keys: ${duplicateRouteKeys.join(', ')}`)
+  }
+
+  if (duplicateRoutePaths.length) {
+    problems.push(`duplicate route paths: ${duplicateRoutePaths.join(', ')}`)
+  }
+
+  if (invalidRouteGroups.length) {
+    problems.push(`invalid route groups: ${invalidRouteGroups.join(', ')}`)
+  }
 
   if (missingComponentKeys.length) {
     problems.push(`missing component mappings for: ${missingComponentKeys.join(', ')}`)
