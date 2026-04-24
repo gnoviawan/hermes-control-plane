@@ -10,6 +10,8 @@ import type {
   RunRecord,
   SessionRecord,
   Skill,
+  ToolRecord,
+  ToolsetRecord,
 } from '../types'
 
 export const mockProfiles: Profile[] = [
@@ -275,6 +277,42 @@ export const mockProviderRouting: ProviderRoutingRecord = {
   effectiveProviderCount: 2,
   writeRestrictions: ['Provider credentials remain redacted in provider routing views.'],
 }
+
+export const mockToolsets: ToolsetRecord[] = [
+  { name: 'browser', source: 'builtin', enabled: true, toolCount: 2 },
+  { name: 'hermes-cli', source: 'builtin', enabled: true, toolCount: 5 },
+  { name: 'mcp:mempalace', source: 'mcp', enabled: true, toolCount: 1 },
+]
+
+export const mockTools: ToolRecord[] = [
+  {
+    name: 'browser_navigate',
+    toolset: 'browser',
+    sourceType: 'builtin',
+    sourceId: 'browser',
+    available: true,
+    availabilityReason: 'Enabled by configured toolset',
+    schemaSummary: { type: 'builtin' },
+  },
+  {
+    name: 'terminal',
+    toolset: 'hermes-cli',
+    sourceType: 'builtin',
+    sourceId: 'hermes-cli',
+    available: true,
+    availabilityReason: 'Enabled by configured toolset',
+    schemaSummary: { type: 'builtin' },
+  },
+  {
+    name: 'mcp__mempalace',
+    toolset: 'mcp:mempalace',
+    sourceType: 'mcp',
+    sourceId: 'mempalace',
+    available: true,
+    availabilityReason: 'MCP server configured',
+    schemaSummary: { type: 'mcp' },
+  },
+]
 
 export const mockLogs: LogEntry[] = [
   {

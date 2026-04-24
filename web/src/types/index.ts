@@ -153,6 +153,23 @@ export interface ProviderRoutingRecord {
   writeRestrictions: string[]
 }
 
+export interface ToolsetRecord {
+  name: string
+  source: 'builtin' | 'mcp'
+  enabled: boolean
+  toolCount: number
+}
+
+export interface ToolRecord {
+  name: string
+  toolset: string
+  sourceType: 'builtin' | 'mcp'
+  sourceId?: string
+  available: boolean
+  availabilityReason?: string
+  schemaSummary: Record<string, unknown>
+}
+
 export interface LogEntry {
   id: string
   timestamp: string
