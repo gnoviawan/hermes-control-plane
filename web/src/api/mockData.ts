@@ -1,5 +1,6 @@
 import type {
   AgentConfigRecord,
+  AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApprovalRecord,
   CheckpointRecord,
@@ -19,6 +20,9 @@ import type {
   Skill,
   SystemAllowlistsRecord,
   SystemGatewayRecord,
+  SystemHealthRecord,
+  SystemDoctorRecord,
+  SetupCheckRecord,
   SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
@@ -490,6 +494,55 @@ export const mockSystemGateway: SystemGatewayRecord = {
   writeRestrictions: [
     'Gateway secrets remain redacted in dashboard responses.',
     'Gateway v1 updates only the top-level gateway block and lifecycle state file.',
+  ],
+}
+
+export const mockSystemHealth: SystemHealthRecord = {
+  status: 'ok',
+  service: 'Hermes Control Plane API',
+  apiVersion: 'v1alpha1',
+  appVersion: '0.1.0',
+  adapter: {
+    kind: 'hermes-dashboard-api',
+    hermesHome: '/opt/data',
+    hermesBin: '/opt/hermes/.venv/bin/hermes',
+    hermesBinExists: true,
+  },
+  runtime: {
+    activeProfile: 'default',
+    profileCount: 5,
+    sessionCount: 12,
+    cronJobCount: 3,
+    gatewayState: 'running',
+    statusExcerpt: ['Hermes OK', 'Gateway running'],
+  },
+}
+
+export const mockSystemDoctor: SystemDoctorRecord = {
+  status: 'ok',
+  checks: [
+    { name: 'hermes-binary', ok: true, detail: '/opt/hermes/.venv/bin/hermes', severity: 'info' },
+    { name: 'runtime-status', ok: true, detail: 'Hermes OK; Gateway running', severity: 'info' },
+    { name: 'gateway-state', ok: true, detail: 'running', severity: 'info' },
+  ],
+}
+
+export const mockSetupCheck: SetupCheckRecord = {
+  status: 'ok',
+  items: [
+    { key: 'hermes_home', configured: true, value: '/opt/data' },
+    { key: 'hermes_bin', configured: true, value: '/opt/hermes/.venv/bin/hermes' },
+    { key: 'hermes_root', configured: true, value: '/opt/hermes' },
+  ],
+}
+
+export const mockAgentDiagnostics: AgentDiagnosticsRecord = {
+  agentId: 'default',
+  status: 'ok',
+  checks: [
+    { name: 'profile-home', ok: true, detail: '/opt/data/profiles/default', severity: 'info' },
+    { name: 'agent-log', ok: true, detail: '/opt/data/profiles/default/logs/agent.log', severity: 'info' },
+    { name: 'runtime-status', ok: true, detail: 'Active runtime reachable.', severity: 'info' },
   ],
 }
 

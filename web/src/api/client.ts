@@ -18,7 +18,9 @@ import {
   mockSessions,
   mockSkills,
   mockSystemAllowlists,
+  mockSystemDoctor,
   mockSystemGateway,
+  mockSystemHealth,
   mockSystemMemoryProfiles,
   mockSystemSecurity,
   mockSystemSkillLibrary,
@@ -27,15 +29,19 @@ import {
   mockWorkspaceArtifacts,
   mockWorkspaceFile,
   mockWorkspaceTree,
+  mockSetupCheck,
+  mockAgentDiagnostics,
 } from './mockData'
 import type {
   AgentConfigRecord,
+  AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApiResult,
   ApprovalRecord,
   CheckpointRecord,
   CreateProfilePayload,
   CronJob,
+  DiagnosticsCheckRecord,
   GatewayLifecycleRecord,
   GatewayPlatformRecord,
   LogEntry,
@@ -48,12 +54,15 @@ import type {
   ProviderCatalogRecord,
   ProviderRoutingRecord,
   RunRecord,
+  SetupCheckRecord,
   SessionDetailRecord,
   SessionRecord,
   Skill,
   SkillBroadcastPayload,
   SystemAllowlistsRecord,
+  SystemDoctorRecord,
   SystemGatewayRecord,
+  SystemHealthRecord,
   SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
@@ -203,6 +212,57 @@ type BackendLogsResponse = {
   path: string
   lines: string[]
   total_lines_returned: number
+}
+
+type BackendSystemHealthResponse = {
+  status: 'ok'
+  service: string
+  api_version: string
+  app_version: string
+  adapter: {
+    kind: string
+    hermes_home: string
+    hermes_bin: string
+    hermes_bin_exists: boolean
+  }
+  runtime: {
+    active_profile?: string | null
+    profile_count: number
+    session_count: number
+    cron_job_count: number
+    gateway_state?: string | null
+    status_excerpt: string[]
+  }
+}
+
+type BackendDoctorResponse = {
+  status: 'ok' | 'warning'
+  checks: Array<{
+    name: string
+    ok: boolean
+    detail: string
+    severity: 'info' | 'warning' | 'error'
+  }>
+}
+
+type BackendSetupCheckResponse = {
+  status: 'ok' | 'warning'
+  items: Array<{
+    key: string
+    configured: boolean
+    value: string
+  }>
+}
+
+type BackendAgentDiagnosticsResponse = {
+  agent_id: string
+  status: 'ok' | 'warning'
+  checks: Array<{
+    name: string
+    ok: boolean
+    detail: string
+    severity: 'info' | 'warning' | 'error'
+  }>
 }
 
 type BackendRunsResponse = {
@@ -621,6 +681,57 @@ const normalizeLogs = (payload: BackendLogsResponse): LogEntry[] =>
     source: payload.log_name,
     message: line,
   }))
+
+const normalizeDiagnosticsChecks = (
+  checks: Array<{ name: string; ok: boolean; detail: string; severity: 'info' | 'warning' | 'error' }>,
+): DiagnosticsCheckRecord[] =>
+  checks.map((check) => ({
+    name: check.name,
+    ok: check.ok,
+    detail: check.detail,
+    severity: check.severity,
+  }))
+
+const normalizeSystemHealth = (payload: BackendSystemHealthResponse): SystemHealthRecord => ({
+  status: payload.status,
+  service: payload.service,
+  apiVersion: payload.api_version,
+  appVersion: payload.app_version,
+  adapter: {
+    kind: payload.adapter.kind,
+    hermesHome: payload.adapter.hermes_home,
+    hermesBin: payload.adapter.hermes_bin,
+    hermesBinExists: payload.adapter.hermes_bin_exists,
+  },
+  runtime: {
+    activeProfile: payload.runtime.active_profile ?? undefined,
+    profileCount: payload.runtime.profile_count,
+    sessionCount: payload.runtime.session_count,
+    cronJobCount: payload.runtime.cron_job_count,
+    gatewayState: payload.runtime.gateway_state ?? undefined,
+    statusExcerpt: payload.runtime.status_excerpt,
+  },
+})
+
+const normalizeDoctor = (payload: BackendDoctorResponse): SystemDoctorRecord => ({
+  status: payload.status,
+  checks: normalizeDiagnosticsChecks(payload.checks),
+})
+
+const normalizeSetupCheck = (payload: BackendSetupCheckResponse): SetupCheckRecord => ({
+  status: payload.status,
+  items: payload.items.map((item) => ({
+    key: item.key,
+    configured: item.configured,
+    value: item.value,
+  })),
+})
+
+const normalizeAgentDiagnostics = (payload: BackendAgentDiagnosticsResponse): AgentDiagnosticsRecord => ({
+  agentId: payload.agent_id,
+  status: payload.status,
+  checks: normalizeDiagnosticsChecks(payload.checks),
+})
 
 const compareRunsByStartedAtDesc = (left: RunRecord, right: RunRecord): number =>
   Date.parse(right.startedAt) - Date.parse(left.startedAt)
@@ -1094,9 +1205,33 @@ export const apiClient = {
     withFallback(async () => {
       const profilesPayload = await fetchJson<BackendProfilesResponse>('/profiles')
       const activeProfileId = profilesPayload.active_profile || profilesPayload.profiles[0]?.name || 'default'
-      const payload = await fetchJson<BackendLogsResponse>(`/logs?profile=${encodeURIComponent(activeProfileId)}`)
+      const payload = await fetchJson<BackendLogsResponse>(`/agents/${encodeURIComponent(activeProfileId)}/logs`)
       return normalizeLogs(payload)
     }, () => structuredClone(mockLogs)),
+
+  getSystemHealth: async (): Promise<ApiResult<SystemHealthRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemHealthResponse>('/system/health')
+      return normalizeSystemHealth(payload)
+    }, () => structuredClone(mockSystemHealth)),
+
+  getSystemDoctor: async (): Promise<ApiResult<SystemDoctorRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendDoctorResponse>('/system/doctor')
+      return normalizeDoctor(payload)
+    }, () => structuredClone(mockSystemDoctor)),
+
+  getSystemSetupCheck: async (): Promise<ApiResult<SetupCheckRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSetupCheckResponse>('/system/setup/check')
+      return normalizeSetupCheck(payload)
+    }, () => structuredClone(mockSetupCheck)),
+
+  getAgentDiagnostics: async (profileId: string): Promise<ApiResult<AgentDiagnosticsRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentDiagnosticsResponse>(`/agents/${encodeURIComponent(profileId)}/diagnostics`)
+      return normalizeAgentDiagnostics(payload)
+    }, () => ({ ...structuredClone(mockAgentDiagnostics), agentId: profileId })),
 
   getConfigSummary: async (): Promise<ApiResult<BackendConfigSummary>> =>
     withFallback(async () => {

@@ -35,6 +35,7 @@ from app.models import (
     AgentSessionsResponse,
     AgentSummary,
     AgentCheckpointsResponse,
+    AgentDiagnosticsResponse,
     AgentWorkspaceArtifactsResponse,
     AgentWorkspaceTreeResponse,
     ApprovalQueueResponse,
@@ -42,6 +43,8 @@ from app.models import (
     ConfigSummary,
     CreateProfileRequest,
     HealthResponse,
+    DiagnosticsCheck,
+    DiagnosticsRuntimeSummary,
     GatewayLifecycleResponse,
     GatewayPlatformInfo,
     LogEntry,
@@ -63,9 +66,12 @@ from app.models import (
     SessionSearchResponse,
     SkillBroadcastRequest,
     SkillBroadcastResult,
+    SetupCheckResponse,
+    SkillSummary,
     SkillsResponse,
     StatusResponse,
     SystemAllowlistsResponse,
+    SystemDoctorResponse,
     SystemGatewayPatchRequest,
     SystemGatewayPlatformsResponse,
     SystemGatewayResponse,
@@ -97,6 +103,7 @@ from app.services.hermes_adapter import (
 )
 from app.services.config_service import config_service
 from app.services.cron_service import cron_service
+from app.services.diagnostics_service import diagnostics_service
 from app.services.gateway_service import gateway_service
 from app.services.mcp_service import mcp_service
 from app.services.memory_service import memory_service
@@ -151,22 +158,22 @@ def get_health() -> HealthResponse:
 
 @app.get('/api/system/health', response_model=SystemHealthResponse, tags=['system'])
 def get_system_health() -> SystemHealthResponse:
-    return SystemHealthResponse(
-        status='ok',
-        service=settings.app_name,
-        api_version=settings.dashboard_api_version,
-        app_version=settings.app_version,
-        adapter=adapter_descriptor(),
-    )
+    return diagnostics_service.get_system_health()
+
+
+@app.get('/api/system/doctor', response_model=SystemDoctorResponse, tags=['system'])
+def get_system_doctor() -> SystemDoctorResponse:
+    return diagnostics_service.get_system_doctor()
 
 
 @app.get('/api/system/version', response_model=SystemVersionResponse, tags=['system'])
 def get_system_version() -> SystemVersionResponse:
-    return SystemVersionResponse(
-        service=settings.app_name,
-        api_version=settings.dashboard_api_version,
-        app_version=settings.app_version,
-    )
+    return diagnostics_service.get_system_version()
+
+
+@app.get('/api/system/setup/check', response_model=SetupCheckResponse, tags=['system'])
+def get_system_setup_check() -> SetupCheckResponse:
+    return diagnostics_service.get_setup_check()
 
 
 @app.get('/api/system/providers', response_model=ProviderCatalogResponse, tags=['system'])
@@ -597,6 +604,22 @@ def get_logs(
     lines: int = Query(100, ge=1, le=500),
 ) -> LogEntry:
     return LogEntry(**log_payload(profile=profile, log_name=log_name, lines=lines))
+
+
+@app.get('/api/agents/{agent_id}/diagnostics', response_model=AgentDiagnosticsResponse, tags=['system'])
+def get_agent_diagnostics(agent_id: str) -> AgentDiagnosticsResponse:
+    ensure_profile_exists(agent_id)
+    return diagnostics_service.get_agent_diagnostics(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/logs', response_model=LogEntry, tags=['logs'])
+def get_agent_logs(
+    agent_id: str,
+    log_name: str = Query('agent'),
+    lines: int = Query(100, ge=1, le=500),
+) -> LogEntry:
+    ensure_profile_exists(agent_id)
+    return LogEntry(**diagnostics_service.get_agent_logs(agent_id, log_name=log_name, lines=lines))
 
 
 @app.get('/api/agents/{agent_id}/config', response_model=AgentConfigResponse, tags=['config'])
