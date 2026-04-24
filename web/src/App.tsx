@@ -13,6 +13,7 @@ import { SecurityPage } from './pages/SecurityPage'
 import { SessionsPage } from './pages/SessionsPage'
 import { SkillsPage } from './pages/SkillsPage'
 import { ToolsPage } from './pages/ToolsPage'
+import { WorkspacePage } from './pages/WorkspacePage'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/mcp" element={<McpPage />} />
         <Route path="/memory" element={<MemoryPage />} />
+        <Route path="/workspace" element={<WorkspacePage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/config" element={<ConfigPage />} />

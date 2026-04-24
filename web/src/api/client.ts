@@ -2,6 +2,7 @@ import {
   mockAgentConfig,
   mockAgentSecurity,
   mockApprovals,
+  mockCheckpoints,
   mockCronJobs,
   mockLogs,
   mockMcpServers,
@@ -19,14 +20,18 @@ import {
   mockSystemMemoryProfiles,
   mockSystemSecurity,
   mockSystemSkillLibrary,
-  mockTools,
   mockToolsets,
+  mockTools,
+  mockWorkspaceArtifacts,
+  mockWorkspaceFile,
+  mockWorkspaceTree,
 } from './mockData'
 import type {
   AgentConfigRecord,
   AgentSecurityRecord,
   ApiResult,
   ApprovalRecord,
+  CheckpointRecord,
   CreateProfilePayload,
   CronJob,
   LogEntry,
@@ -50,6 +55,8 @@ import type {
   ToggleSkillPayload,
   ToolRecord,
   ToolsetRecord,
+  WorkspaceArtifactRecord,
+  WorkspaceTreeEntryRecord,
 } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -62,6 +69,9 @@ const cloneProfiles = () => mockProfiles.map((profile) => ({ ...profile }))
 const cloneSkills = () => mockSkills.map((skill) => ({ ...skill, enabledProfiles: [...skill.enabledProfiles] }))
 const cloneMemoryEntries = () => structuredClone(mockMemoryEntries)
 const cloneMemoryProviders = () => structuredClone(mockMemoryProviders)
+const cloneWorkspaceTree = () => structuredClone(mockWorkspaceTree)
+const cloneWorkspaceArtifacts = () => structuredClone(mockWorkspaceArtifacts)
+const cloneCheckpoints = () => structuredClone(mockCheckpoints)
 
 type BackendProfile = {
   name: string
@@ -329,6 +339,46 @@ type BackendSystemMemoryResponse = {
   }>
   total_profiles: number
   total_entries: number
+}
+
+type BackendWorkspaceTreeResponse = {
+  agent_id: string
+  root_path: string
+  entries: Array<{
+    name: string
+    path: string
+    type: 'file' | 'directory'
+    size_bytes?: number | null
+  }>
+  total: number
+}
+
+type BackendWorkspaceFileResponse = {
+  agent_id: string
+  path: string
+  content: string
+  size_bytes: number
+}
+
+type BackendWorkspaceArtifactsResponse = {
+  agent_id: string
+  artifacts: Array<{
+    name: string
+    path: string
+    kind: 'file' | 'directory'
+    size_bytes?: number | null
+  }>
+  total: number
+}
+
+type BackendCheckpointsResponse = {
+  agent_id: string
+  checkpoints: Array<{
+    id: string
+    path: string
+    status: string
+  }>
+  total: number
 }
 
 type BackendApprovalsResponse = {
@@ -644,6 +694,29 @@ const normalizeSystemMemoryProfiles = (payload: BackendSystemMemoryResponse): Sy
     totalEntries: profile.total_entries,
     memoryEntries: profile.memory_entries,
     userEntries: profile.user_entries,
+  }))
+
+const normalizeWorkspaceTree = (payload: BackendWorkspaceTreeResponse): WorkspaceTreeEntryRecord[] =>
+  payload.entries.map((entry) => ({
+    name: entry.name,
+    path: entry.path,
+    type: entry.type,
+    sizeBytes: entry.size_bytes ?? undefined,
+  }))
+
+const normalizeWorkspaceArtifacts = (payload: BackendWorkspaceArtifactsResponse): WorkspaceArtifactRecord[] =>
+  payload.artifacts.map((artifact) => ({
+    name: artifact.name,
+    path: artifact.path,
+    kind: artifact.kind,
+    sizeBytes: artifact.size_bytes ?? undefined,
+  }))
+
+const normalizeCheckpoints = (payload: BackendCheckpointsResponse): CheckpointRecord[] =>
+  payload.checkpoints.map((checkpoint) => ({
+    id: checkpoint.id,
+    path: checkpoint.path,
+    status: checkpoint.status,
   }))
 
 const normalizeApprovals = (payload: BackendApprovalsResponse): ApprovalRecord[] =>
@@ -1090,6 +1163,38 @@ export const apiClient = {
       const payload = await fetchJson<BackendSystemMemoryResponse>('/system/memory')
       return normalizeSystemMemoryProfiles(payload)
     }, () => structuredClone(mockSystemMemoryProfiles)),
+
+  getAgentWorkspaceTree: async (profileId: string): Promise<ApiResult<WorkspaceTreeEntryRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendWorkspaceTreeResponse>(`/agents/${encodeURIComponent(profileId)}/workspace/tree`)
+      return normalizeWorkspaceTree(payload)
+    }, cloneWorkspaceTree),
+
+  getAgentWorkspaceFile: async (profileId: string, relativePath: string): Promise<ApiResult<{ path: string; content: string; sizeBytes: number }>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendWorkspaceFileResponse>(`/agents/${encodeURIComponent(profileId)}/workspace/file?path=${encodeURIComponent(relativePath)}`)
+      return { path: payload.path, content: payload.content, sizeBytes: payload.size_bytes }
+    }, () => structuredClone(mockWorkspaceFile)),
+
+  getAgentWorkspaceArtifacts: async (profileId: string): Promise<ApiResult<WorkspaceArtifactRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendWorkspaceArtifactsResponse>(`/agents/${encodeURIComponent(profileId)}/workspace/artifacts`)
+      return normalizeWorkspaceArtifacts(payload)
+    }, cloneWorkspaceArtifacts),
+
+  getAgentCheckpoints: async (profileId: string): Promise<ApiResult<CheckpointRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendCheckpointsResponse>(`/agents/${encodeURIComponent(profileId)}/checkpoints`)
+      return normalizeCheckpoints(payload)
+    }, cloneCheckpoints),
+
+  restoreAgentCheckpoint: async (profileId: string, checkpointId: string): Promise<ApiResult<{ restored: boolean; message: string }>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<{ restored: boolean; message: string }>(`/agents/${encodeURIComponent(profileId)}/checkpoints/${encodeURIComponent(checkpointId)}/restore`, {
+        method: 'POST',
+      })
+      return { restored: payload.restored, message: payload.message }
+    }, () => ({ restored: true, message: `Restored checkpoint ${checkpointId} for ${profileId}.` })),
 
   getAgentApprovals: async (profileId: string): Promise<ApiResult<ApprovalRecord[]>> =>
     withFallback(async () => {

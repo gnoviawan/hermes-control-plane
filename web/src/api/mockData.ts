@@ -2,6 +2,7 @@ import type {
   AgentConfigRecord,
   AgentSecurityRecord,
   ApprovalRecord,
+  CheckpointRecord,
   CronJob,
   LogEntry,
   McpServerRecord,
@@ -21,6 +22,8 @@ import type {
   SystemSkillLibraryRecord,
   ToolRecord,
   ToolsetRecord,
+  WorkspaceArtifactRecord,
+  WorkspaceTreeEntryRecord,
 } from '../types'
 
 export const mockProfiles: Profile[] = [
@@ -428,6 +431,29 @@ export const mockSystemMemoryProfiles: SystemMemoryProfileRecord[] = [
     memoryEntries: 1,
     userEntries: 0,
   },
+]
+
+export const mockWorkspaceTree: WorkspaceTreeEntryRecord[] = [
+  { name: 'notes', path: 'notes', type: 'directory' },
+  { name: 'artifacts', path: 'artifacts', type: 'directory' },
+  { name: 'checkpoints', path: 'checkpoints', type: 'directory' },
+  { name: 'README.md', path: 'README.md', type: 'file', sizeBytes: 1280 },
+]
+
+export const mockWorkspaceFile = {
+  path: 'notes/todo.md',
+  content: '# TODO\nship workspace page\n',
+  sizeBytes: 29,
+}
+
+export const mockWorkspaceArtifacts: WorkspaceArtifactRecord[] = [
+  { name: 'run-summary.txt', path: 'run-summary.txt', kind: 'file', sizeBytes: 124 },
+  { name: 'screenshots', path: 'screenshots', kind: 'directory' },
+]
+
+export const mockCheckpoints: CheckpointRecord[] = [
+  { id: 'checkpoint-alpha', path: '/opt/data/workspace/checkpoints/checkpoint-alpha', status: 'available' },
+  { id: 'checkpoint-beta', path: '/opt/data/workspace/checkpoints/checkpoint-beta', status: 'available' },
 ]
 
 export const mockApprovals: ApprovalRecord[] = [

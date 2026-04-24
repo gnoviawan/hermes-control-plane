@@ -475,6 +475,59 @@ class SystemMemorySummaryResponse(BaseModel):
     total_entries: int
 
 
+class WorkspaceTreeEntry(BaseModel):
+    name: str
+    path: str
+    type: Literal['file', 'directory']
+    size_bytes: int | None = None
+
+
+class AgentWorkspaceTreeResponse(BaseModel):
+    agent_id: str
+    root_path: str
+    entries: list[WorkspaceTreeEntry]
+    total: int
+
+
+class WorkspaceFileResponse(BaseModel):
+    agent_id: str
+    path: str
+    content: str
+    size_bytes: int
+
+
+class WorkspaceArtifact(BaseModel):
+    name: str
+    path: str
+    kind: Literal['file', 'directory']
+    size_bytes: int | None = None
+
+
+class AgentWorkspaceArtifactsResponse(BaseModel):
+    agent_id: str
+    artifacts: list[WorkspaceArtifact]
+    total: int
+
+
+class CheckpointInfo(BaseModel):
+    id: str
+    path: str
+    status: str
+
+
+class AgentCheckpointsResponse(BaseModel):
+    agent_id: str
+    checkpoints: list[CheckpointInfo]
+    total: int
+
+
+class CheckpointRestoreResponse(BaseModel):
+    agent_id: str
+    checkpoint_id: str
+    restored: bool
+    message: str
+
+
 class ApprovalRequest(BaseModel):
     id: str
     agent_id: str
