@@ -73,6 +73,37 @@ class SystemVersionResponse(BaseModel):
     app_version: str
 
 
+class PluginSlotDescriptor(BaseModel):
+    kind: Literal['page_route', 'dashboard_widget', 'tool_result_renderer']
+    title: str
+    description: str
+
+
+class PluginExtension(BaseModel):
+    key: str
+    kind: Literal['page_route', 'dashboard_widget', 'tool_result_renderer']
+    title: str
+    description: str
+    target: str
+    path: str | None = None
+
+
+class DashboardPlugin(BaseModel):
+    id: str
+    name: str
+    version: str
+    enabled: bool = True
+    source: str
+    description: str
+    extensions: list[PluginExtension] = Field(default_factory=list)
+
+
+class SystemPluginsResponse(BaseModel):
+    supported_slots: list[PluginSlotDescriptor] = Field(default_factory=list)
+    plugins: list[DashboardPlugin] = Field(default_factory=list)
+    total_plugins: int = 0
+
+
 class AgentDefaults(BaseModel):
     model: str | None = None
     provider: str | None = None

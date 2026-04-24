@@ -22,6 +22,7 @@ import {
   mockSystemGateway,
   mockSystemHealth,
   mockSystemMemoryProfiles,
+  mockSystemPlugins,
   mockSystemSecurity,
   mockSystemSkillLibrary,
   mockToolsets,
@@ -41,6 +42,7 @@ import type {
   CheckpointRecord,
   CreateProfilePayload,
   CronJob,
+  DashboardPluginRecord,
   DiagnosticsCheckRecord,
   GatewayLifecycleRecord,
   GatewayPlatformRecord,
@@ -50,6 +52,8 @@ import type {
   MemoryProviderRecord,
   ModelCatalogRecord,
   OverviewResponse,
+  PluginExtensionRecord,
+  PluginSlotDescriptorRecord,
   Profile,
   ProviderCatalogRecord,
   ProviderRoutingRecord,
@@ -64,6 +68,7 @@ import type {
   SystemGatewayRecord,
   SystemHealthRecord,
   SystemMemoryProfileRecord,
+  SystemPluginsRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
   ToggleSkillPayload,
@@ -263,6 +268,31 @@ type BackendAgentDiagnosticsResponse = {
     detail: string
     severity: 'info' | 'warning' | 'error'
   }>
+}
+
+type BackendSystemPluginsResponse = {
+  supported_slots: Array<{
+    kind: 'page_route' | 'dashboard_widget' | 'tool_result_renderer'
+    title: string
+    description: string
+  }>
+  plugins: Array<{
+    id: string
+    name: string
+    version: string
+    enabled: boolean
+    source: string
+    description: string
+    extensions: Array<{
+      key: string
+      kind: 'page_route' | 'dashboard_widget' | 'tool_result_renderer'
+      title: string
+      description: string
+      target: string
+      path?: string | null
+    }>
+  }>
+  total_plugins: number
 }
 
 type BackendRunsResponse = {
@@ -731,6 +761,31 @@ const normalizeAgentDiagnostics = (payload: BackendAgentDiagnosticsResponse): Ag
   agentId: payload.agent_id,
   status: payload.status,
   checks: normalizeDiagnosticsChecks(payload.checks),
+})
+
+const normalizeSystemPlugins = (payload: BackendSystemPluginsResponse): SystemPluginsRecord => ({
+  supportedSlots: payload.supported_slots.map((slot): PluginSlotDescriptorRecord => ({
+    kind: slot.kind,
+    title: slot.title,
+    description: slot.description,
+  })),
+  plugins: payload.plugins.map((plugin): DashboardPluginRecord => ({
+    id: plugin.id,
+    name: plugin.name,
+    version: plugin.version,
+    enabled: plugin.enabled,
+    source: plugin.source,
+    description: plugin.description,
+    extensions: plugin.extensions.map((extension): PluginExtensionRecord => ({
+      key: extension.key,
+      kind: extension.kind,
+      title: extension.title,
+      description: extension.description,
+      target: extension.target,
+      path: extension.path ?? undefined,
+    })),
+  })),
+  totalPlugins: payload.total_plugins,
 })
 
 const compareRunsByStartedAtDesc = (left: RunRecord, right: RunRecord): number =>
@@ -1226,6 +1281,12 @@ export const apiClient = {
       const payload = await fetchJson<BackendSetupCheckResponse>('/system/setup/check')
       return normalizeSetupCheck(payload)
     }, () => structuredClone(mockSetupCheck)),
+
+  getSystemPlugins: async (): Promise<ApiResult<SystemPluginsRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemPluginsResponse>('/system/plugins')
+      return normalizeSystemPlugins(payload)
+    }, () => structuredClone(mockSystemPlugins)),
 
   getAgentDiagnostics: async (profileId: string): Promise<ApiResult<AgentDiagnosticsRecord>> =>
     withFallback(async () => {

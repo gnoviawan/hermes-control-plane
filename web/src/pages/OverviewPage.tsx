@@ -3,13 +3,17 @@ import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
 import { PageHeader } from '../components/PageHeader'
 import { StatusBadge } from '../components/StatusBadge'
-import type { OverviewMetric } from '../types'
+import type { OverviewMetric, PluginExtensionRecord } from '../types'
 
 export function OverviewPage() {
   const { data, isLoading, isMock, error, refresh } = useApiQuery(apiClient.getOverview, [])
+  const pluginsQuery = useApiQuery(apiClient.getSystemPlugins, [])
   const metrics = data?.metrics ?? []
   const activity = data?.activity ?? []
   const alerts = data?.alerts ?? []
+  const pluginWidgets: PluginExtensionRecord[] = (pluginsQuery.data?.plugins ?? [])
+    .flatMap((plugin) => plugin.extensions)
+    .filter((extension) => extension.kind === 'dashboard_widget')
   const metricPlaceholders: OverviewMetric[] = Array.from({ length: 4 }, (_, index) => ({
     key: `placeholder-${index}`,
     label: '',
@@ -121,6 +125,26 @@ export function OverviewPage() {
                   ))
                 ) : (
                   <Typography.Text type="secondary">No alerts currently blocking rollout.</Typography.Text>
+                )}
+              </Space>
+            </Card>
+
+            <Card className="glass-panel qwen-section-card" title="Plugin widgets">
+              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                {pluginsQuery.isLoading ? (
+                  <Skeleton active paragraph={{ rows: 3 }} title={false} />
+                ) : pluginWidgets.length ? (
+                  pluginWidgets.map((widget) => (
+                    <Alert
+                      key={widget.key}
+                      type="info"
+                      showIcon
+                      message={widget.title}
+                      description={`${widget.description} · target: ${widget.target}`}
+                    />
+                  ))
+                ) : (
+                  <Typography.Text type="secondary">No dashboard widgets registered yet.</Typography.Text>
                 )}
               </Space>
             </Card>

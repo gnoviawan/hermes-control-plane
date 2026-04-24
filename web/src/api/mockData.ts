@@ -5,6 +5,7 @@ import type {
   ApprovalRecord,
   CheckpointRecord,
   CronJob,
+  DashboardPluginRecord,
   GatewayPlatformRecord,
   LogEntry,
   McpServerRecord,
@@ -12,6 +13,7 @@ import type {
   MemoryProviderRecord,
   ModelCatalogRecord,
   OverviewResponse,
+  PluginSlotDescriptorRecord,
   Profile,
   ProviderCatalogRecord,
   ProviderRoutingRecord,
@@ -24,6 +26,7 @@ import type {
   SystemDoctorRecord,
   SetupCheckRecord,
   SystemMemoryProfileRecord,
+  SystemPluginsRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
   ToolRecord,
@@ -544,6 +547,65 @@ export const mockAgentDiagnostics: AgentDiagnosticsRecord = {
     { name: 'agent-log', ok: true, detail: '/opt/data/profiles/default/logs/agent.log', severity: 'info' },
     { name: 'runtime-status', ok: true, detail: 'Active runtime reachable.', severity: 'info' },
   ],
+}
+
+export const mockPluginSlots: PluginSlotDescriptorRecord[] = [
+  {
+    kind: 'page_route',
+    title: 'Dashboard page routes',
+    description: 'Register dedicated dashboard pages surfaced through plugin-aware navigation and route shells.',
+  },
+  {
+    kind: 'dashboard_widget',
+    title: 'Dashboard cards & widgets',
+    description: 'Inject plugin-owned summary cards or widgets into explicit overview/dashboard surfaces.',
+  },
+  {
+    kind: 'tool_result_renderer',
+    title: 'Tool result renderers',
+    description: 'Attach plugin-provided result renderers for specific tool outputs without patching core pages.',
+  },
+]
+
+export const mockPlugins: DashboardPluginRecord[] = [
+  {
+    id: 'ops-insights',
+    name: 'Ops Insights',
+    version: '0.1.0',
+    enabled: true,
+    source: 'local',
+    description: 'Adds operational extensions for the Hermes dashboard.',
+    extensions: [
+      {
+        key: 'ops-route',
+        kind: 'page_route',
+        title: 'Ops Insights',
+        description: 'Plugin route for operational dashboards and drilldowns.',
+        target: 'settings.plugins',
+        path: '/plugins/ops-insights/ops-route',
+      },
+      {
+        key: 'queue-depth',
+        kind: 'dashboard_widget',
+        title: 'Queue Depth',
+        description: 'Shows queued work across agents.',
+        target: 'overview.sidebar',
+      },
+      {
+        key: 'tool-gallery',
+        kind: 'tool_result_renderer',
+        title: 'Tool Gallery',
+        description: 'Renders media-heavy tool outputs.',
+        target: 'tool:browser_get_images',
+      },
+    ],
+  },
+]
+
+export const mockSystemPlugins: SystemPluginsRecord = {
+  supportedSlots: mockPluginSlots,
+  plugins: mockPlugins,
+  totalPlugins: mockPlugins.length,
 }
 
 export const mockApprovals: ApprovalRecord[] = [
