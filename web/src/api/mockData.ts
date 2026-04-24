@@ -1,6 +1,8 @@
 import type {
   AgentConfigRecord,
+  AgentConfigReloadRecord,
   AgentConfigSchemaRecord,
+  AgentConfigValidationRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApprovalRecord,
@@ -329,7 +331,7 @@ export const mockAgentConfigSchema: AgentConfigSchemaRecord = {
           impact: 'new_session',
           value: 'gpt-5.4',
           sensitive: false,
-          options: [],
+          options: ['gpt-5.4', 'gpt-5-mini', 'glm-5.1'],
         },
         {
           key: 'model.provider',
@@ -340,7 +342,7 @@ export const mockAgentConfigSchema: AgentConfigSchemaRecord = {
           impact: 'new_session',
           value: 'custom',
           sensitive: false,
-          options: [],
+          options: ['custom', 'backup'],
         },
       ],
     },
@@ -357,7 +359,7 @@ export const mockAgentConfigSchema: AgentConfigSchemaRecord = {
           impact: 'new_session',
           value: 'creative',
           sensitive: false,
-          options: [],
+          options: ['creative', 'focused', 'supportive'],
         },
       ],
     },
@@ -418,6 +420,24 @@ export const mockAgentConfigSchema: AgentConfigSchemaRecord = {
   editableCount: 5,
   deferredCount: 2,
   forbiddenCount: 0,
+}
+
+export const mockConfigValidation: AgentConfigValidationRecord = {
+  agentId: 'default',
+  valid: true,
+  errors: [],
+  warnings: [],
+  changedKeys: ['display.personality'],
+  requiresReload: false,
+  requiresRestart: false,
+  requiresNewSession: true,
+}
+
+export const mockConfigReload: AgentConfigReloadRecord = {
+  agentId: 'default',
+  path: '/opt/data/hermes/profiles/default/config.yaml',
+  reloaded: true,
+  message: 'Config reload requested',
 }
 
 export const mockProviders: ProviderCatalogRecord[] = [

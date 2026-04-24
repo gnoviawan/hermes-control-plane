@@ -14,3 +14,22 @@ def test_config_page_uses_schema_driven_editor_sections() -> None:
     assert 'Editable schema' in config_page
     assert 'Raw effective config' in config_page
     assert 'Write restrictions' in config_page
+
+
+def test_config_page_includes_validate_preview_and_reload_save_flow() -> None:
+    config_page = (ROOT / 'web' / 'src' / 'pages' / 'ConfigPage.tsx').read_text(encoding='utf-8')
+    client_source = (ROOT / 'web' / 'src' / 'api' / 'client.ts').read_text(encoding='utf-8')
+
+    assert 'validateAgentConfig' in client_source
+    assert 'patchAgentConfig' in client_source
+    assert 'reloadAgentConfig' in client_source
+
+    assert 'draftValues' in config_page
+    assert 'pendingChanges' in config_page
+    assert 'Validation preview' in config_page
+    assert 'Save changes' in config_page
+    assert 'Discard changes' in config_page
+    assert 'Reload config' in config_page
+    assert 'validateAgentConfig' in config_page
+    assert 'patchAgentConfig' in config_page
+    assert 'reloadAgentConfig' in config_page

@@ -166,6 +166,24 @@ export interface AgentConfigSchemaRecord {
   forbiddenCount: number
 }
 
+export interface AgentConfigValidationRecord {
+  agentId: string
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  changedKeys: string[]
+  requiresReload: boolean
+  requiresRestart: boolean
+  requiresNewSession: boolean
+}
+
+export interface AgentConfigReloadRecord {
+  agentId: string
+  path: string
+  reloaded: boolean
+  message: string
+}
+
 export interface AgentConfigRecord {
   agentId: string
   path: string
