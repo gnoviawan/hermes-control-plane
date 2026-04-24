@@ -1,5 +1,6 @@
 import type {
   AgentConfigRecord,
+  AgentConfigSchemaRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApprovalRecord,
@@ -309,6 +310,114 @@ export const mockAgentConfig: AgentConfigRecord = {
     'Provider credentials and fallback chains remain read-only in Config v1.',
     'Only personality, model selection, and runtime toggles are writable in this slice.',
   ],
+}
+
+export const mockAgentConfigSchema: AgentConfigSchemaRecord = {
+  agentId: 'default',
+  path: '/opt/data/hermes/profiles/default/config.yaml',
+  sections: [
+    {
+      key: 'model',
+      label: 'Model',
+      fields: [
+        {
+          key: 'model.default',
+          label: 'Default model',
+          description: 'Primary model used for new runs unless overridden.',
+          type: 'string',
+          status: 'editable',
+          impact: 'new_session',
+          value: 'gpt-5.4',
+          sensitive: false,
+          options: [],
+        },
+        {
+          key: 'model.provider',
+          label: 'Default provider',
+          description: 'Provider used for new runs unless overridden.',
+          type: 'string',
+          status: 'editable',
+          impact: 'new_session',
+          value: 'custom',
+          sensitive: false,
+          options: [],
+        },
+      ],
+    },
+    {
+      key: 'display',
+      label: 'Display',
+      fields: [
+        {
+          key: 'display.personality',
+          label: 'Personality',
+          description: 'Active personality preset for the profile.',
+          type: 'string',
+          status: 'editable',
+          impact: 'new_session',
+          value: 'creative',
+          sensitive: false,
+          options: [],
+        },
+      ],
+    },
+    {
+      key: 'runtime',
+      label: 'Runtime',
+      fields: [
+        {
+          key: 'runtime.checkpoints_enabled',
+          label: 'Checkpoints enabled',
+          description: 'Enable checkpoint creation during agent execution.',
+          type: 'boolean',
+          status: 'editable',
+          impact: 'reload',
+          value: true,
+          sensitive: false,
+          options: [],
+        },
+        {
+          key: 'runtime.worktree_enabled',
+          label: 'Worktree enabled',
+          description: 'Enable isolated git worktree behavior for execution.',
+          type: 'boolean',
+          status: 'editable',
+          impact: 'reload',
+          value: false,
+          sensitive: false,
+          options: [],
+        },
+      ],
+    },
+  ],
+  deferredFields: [
+    {
+      key: 'providers.custom.api_key',
+      label: 'Provider API key',
+      description: 'Credential-bearing provider settings stay deferred in config schema v1.',
+      type: 'string',
+      status: 'deferred',
+      impact: 'restart',
+      value: '***redacted***',
+      sensitive: true,
+      options: [],
+    },
+    {
+      key: 'fallback_providers',
+      label: 'Fallback providers',
+      description: 'Fallback chains remain read-only until a later config editor slice.',
+      type: 'list',
+      status: 'deferred',
+      impact: 'new_session',
+      value: ['glm-5.1', 'glm-5'],
+      sensitive: false,
+      options: [],
+    },
+  ],
+  fieldCount: 7,
+  editableCount: 5,
+  deferredCount: 2,
+  forbiddenCount: 0,
 }
 
 export const mockProviders: ProviderCatalogRecord[] = [
