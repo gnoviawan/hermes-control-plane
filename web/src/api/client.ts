@@ -5,6 +5,8 @@ import {
   mockCronJobs,
   mockLogs,
   mockMcpServers,
+  mockMemoryEntries,
+  mockMemoryProviders,
   mockModels,
   mockOverview,
   mockProfiles,
@@ -14,6 +16,7 @@ import {
   mockSessions,
   mockSkills,
   mockSystemAllowlists,
+  mockSystemMemoryProfiles,
   mockSystemSecurity,
   mockSystemSkillLibrary,
   mockTools,
@@ -28,6 +31,8 @@ import type {
   CronJob,
   LogEntry,
   McpServerRecord,
+  MemoryEntryRecord,
+  MemoryProviderRecord,
   ModelCatalogRecord,
   OverviewResponse,
   Profile,
@@ -39,6 +44,7 @@ import type {
   Skill,
   SkillBroadcastPayload,
   SystemAllowlistsRecord,
+  SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
   ToggleSkillPayload,
@@ -54,6 +60,8 @@ const isoNow = () => new Date().toISOString()
 
 const cloneProfiles = () => mockProfiles.map((profile) => ({ ...profile }))
 const cloneSkills = () => mockSkills.map((skill) => ({ ...skill, enabledProfiles: [...skill.enabledProfiles] }))
+const cloneMemoryEntries = () => structuredClone(mockMemoryEntries)
+const cloneMemoryProviders = () => structuredClone(mockMemoryProviders)
 
 type BackendProfile = {
   name: string
@@ -288,6 +296,39 @@ type BackendMcpServersResponse = {
     profiles?: string[]
   }>
   total: number
+}
+
+type BackendMemoryResponse = {
+  agent_id: string
+  entries: Array<{
+    id: string
+    scope: 'memory' | 'user'
+    content: string
+    updated_at: string
+  }>
+  total: number
+}
+
+type BackendMemoryProvidersResponse = {
+  agent_id: string
+  providers: Array<{
+    name: string
+    status: string
+    source?: string | null
+    entry_count: number
+  }>
+  total: number
+}
+
+type BackendSystemMemoryResponse = {
+  profiles: Array<{
+    agent_id: string
+    total_entries: number
+    memory_entries: number
+    user_entries: number
+  }>
+  total_profiles: number
+  total_entries: number
 }
 
 type BackendApprovalsResponse = {
@@ -579,6 +620,30 @@ const normalizeMcpServers = (payload: BackendMcpServersResponse): McpServerRecor
     lastReloadAt: server.last_reload_at ?? undefined,
     samplingEnabled: server.sampling_enabled,
     profiles: server.profiles ?? (payload.agent_id ? [payload.agent_id] : []),
+  }))
+
+const normalizeMemoryEntries = (payload: BackendMemoryResponse): MemoryEntryRecord[] =>
+  payload.entries.map((entry) => ({
+    id: entry.id,
+    scope: entry.scope,
+    content: entry.content,
+    updatedAt: entry.updated_at,
+  }))
+
+const normalizeMemoryProviders = (payload: BackendMemoryProvidersResponse): MemoryProviderRecord[] =>
+  payload.providers.map((provider) => ({
+    name: provider.name,
+    status: provider.status,
+    source: provider.source ?? undefined,
+    entryCount: provider.entry_count,
+  }))
+
+const normalizeSystemMemoryProfiles = (payload: BackendSystemMemoryResponse): SystemMemoryProfileRecord[] =>
+  payload.profiles.map((profile) => ({
+    agentId: profile.agent_id,
+    totalEntries: profile.total_entries,
+    memoryEntries: profile.memory_entries,
+    userEntries: profile.user_entries,
   }))
 
 const normalizeApprovals = (payload: BackendApprovalsResponse): ApprovalRecord[] =>
@@ -980,6 +1045,51 @@ export const apiClient = {
       const base = structuredClone(mockMcpServers).find((server) => server.id === serverId) ?? structuredClone(mockMcpServers)[0]
       return { ...base, connectionState: connected ? 'connected' : 'disconnected' }
     }),
+
+  getAgentMemory: async (profileId: string): Promise<ApiResult<MemoryEntryRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendMemoryResponse>(`/agents/${encodeURIComponent(profileId)}/memory`)
+      return normalizeMemoryEntries(payload)
+    }, cloneMemoryEntries),
+
+  createAgentMemory: async (profileId: string, payload: { scope: 'memory' | 'user'; content: string }): Promise<ApiResult<MemoryEntryRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendMemoryResponse['entries'][number]>(`/agents/${encodeURIComponent(profileId)}/memory`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      return normalizeMemoryEntries({ agent_id: profileId, entries: [result], total: 1 })[0]
+    }, () => ({ id: `${payload.scope}-mock`, scope: payload.scope, content: payload.content, updatedAt: isoNow() })),
+
+  patchAgentMemory: async (profileId: string, payload: { id: string; content: string }): Promise<ApiResult<MemoryEntryRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendMemoryResponse['entries'][number]>(`/agents/${encodeURIComponent(profileId)}/memory`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      })
+      return normalizeMemoryEntries({ agent_id: profileId, entries: [result], total: 1 })[0]
+    }, () => ({ ...(cloneMemoryEntries().find((entry) => entry.id === payload.id) ?? cloneMemoryEntries()[0]), content: payload.content, updatedAt: isoNow() })),
+
+  deleteAgentMemory: async (profileId: string, entryId: string): Promise<ApiResult<{ deleted: boolean }>> =>
+    withFallback(async () => {
+      const result = await fetchJson<{ deleted: boolean }>(`/agents/${encodeURIComponent(profileId)}/memory`, {
+        method: 'DELETE',
+        body: JSON.stringify({ id: entryId }),
+      })
+      return { deleted: result.deleted }
+    }, () => ({ deleted: true })),
+
+  getAgentMemoryProviders: async (profileId: string): Promise<ApiResult<MemoryProviderRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendMemoryProvidersResponse>(`/agents/${encodeURIComponent(profileId)}/memory/providers`)
+      return normalizeMemoryProviders(payload)
+    }, cloneMemoryProviders),
+
+  getSystemMemorySummary: async (): Promise<ApiResult<SystemMemoryProfileRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemMemoryResponse>('/system/memory')
+      return normalizeSystemMemoryProfiles(payload)
+    }, () => structuredClone(mockSystemMemoryProfiles)),
 
   getAgentApprovals: async (profileId: string): Promise<ApiResult<ApprovalRecord[]>> =>
     withFallback(async () => {

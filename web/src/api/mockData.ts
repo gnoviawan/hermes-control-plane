@@ -5,6 +5,8 @@ import type {
   CronJob,
   LogEntry,
   McpServerRecord,
+  MemoryEntryRecord,
+  MemoryProviderRecord,
   ModelCatalogRecord,
   OverviewResponse,
   Profile,
@@ -14,6 +16,7 @@ import type {
   SessionRecord,
   Skill,
   SystemAllowlistsRecord,
+  SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
   ToolRecord,
@@ -385,6 +388,45 @@ export const mockMcpServers: McpServerRecord[] = [
     lastReloadAt: '2026-04-24T03:20:00Z',
     samplingEnabled: true,
     profiles: ['default'],
+  },
+]
+
+export const mockMemoryEntries: MemoryEntryRecord[] = [
+  {
+    id: 'mem-1',
+    scope: 'memory',
+    content: 'Prefer CLI-first workflows when possible.',
+    updatedAt: '2026-04-24T04:00:00Z',
+  },
+  {
+    id: 'user-1',
+    scope: 'user',
+    content: 'Timezone: WIB (Asia/Jakarta).',
+    updatedAt: '2026-04-24T04:01:00Z',
+  },
+]
+
+export const mockMemoryProviders: MemoryProviderRecord[] = [
+  {
+    name: 'memory-tool',
+    status: 'healthy',
+    source: 'local-file',
+    entryCount: mockMemoryEntries.length,
+  },
+]
+
+export const mockSystemMemoryProfiles: SystemMemoryProfileRecord[] = [
+  {
+    agentId: 'default',
+    totalEntries: 2,
+    memoryEntries: 1,
+    userEntries: 1,
+  },
+  {
+    agentId: 'ops',
+    totalEntries: 1,
+    memoryEntries: 1,
+    userEntries: 0,
   },
 ]
 

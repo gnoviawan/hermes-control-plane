@@ -202,6 +202,27 @@ export interface McpServerRecord {
   profiles: string[]
 }
 
+export interface MemoryEntryRecord {
+  id: string
+  scope: 'memory' | 'user'
+  content: string
+  updatedAt: string
+}
+
+export interface MemoryProviderRecord {
+  name: string
+  status: string
+  source?: string
+  entryCount: number
+}
+
+export interface SystemMemoryProfileRecord {
+  agentId: string
+  totalEntries: number
+  memoryEntries: number
+  userEntries: number
+}
+
 export interface ApprovalRecord {
   id: string
   agentId: string

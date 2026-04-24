@@ -416,6 +416,65 @@ class McpReloadResponse(BaseModel):
     message: str
 
 
+class MemoryEntry(BaseModel):
+    id: str
+    scope: Literal['memory', 'user']
+    content: str
+    updated_at: str
+
+
+class AgentMemoryResponse(BaseModel):
+    agent_id: str
+    entries: list[MemoryEntry]
+    total: int
+
+
+class MemoryEntryCreateRequest(BaseModel):
+    scope: Literal['memory', 'user']
+    content: str
+
+
+class MemoryEntryPatchRequest(BaseModel):
+    id: str
+    content: str
+
+
+class MemoryEntryDeleteRequest(BaseModel):
+    id: str
+
+
+class MemoryDeleteResponse(BaseModel):
+    agent_id: str
+    id: str
+    deleted: bool
+
+
+class MemoryProviderStatus(BaseModel):
+    name: str
+    status: str
+    source: str | None = None
+    entry_count: int = 0
+
+
+class AgentMemoryProvidersResponse(BaseModel):
+    agent_id: str
+    providers: list[MemoryProviderStatus]
+    total: int
+
+
+class SystemMemoryProfileSummary(BaseModel):
+    agent_id: str
+    total_entries: int
+    memory_entries: int
+    user_entries: int
+
+
+class SystemMemorySummaryResponse(BaseModel):
+    profiles: list[SystemMemoryProfileSummary]
+    total_profiles: int
+    total_entries: int
+
+
 class ApprovalRequest(BaseModel):
     id: str
     agent_id: str
