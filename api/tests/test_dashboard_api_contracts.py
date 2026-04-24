@@ -14,18 +14,19 @@ def test_system_health_contract_is_available() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload == {
-        'status': 'ok',
-        'service': settings.app_name,
-        'api_version': settings.dashboard_api_version,
-        'app_version': settings.app_version,
-        'adapter': {
-            'kind': 'hermes-dashboard-api',
-            'hermes_home': str(settings.hermes_home),
-            'hermes_bin': str(settings.hermes_bin),
-            'hermes_bin_exists': settings.hermes_bin.exists(),
-        },
+    assert payload['status'] == 'ok'
+    assert payload['service'] == settings.app_name
+    assert payload['api_version'] == settings.dashboard_api_version
+    assert payload['app_version'] == settings.app_version
+    assert payload['adapter'] == {
+        'kind': 'hermes-dashboard-api',
+        'hermes_home': str(settings.hermes_home),
+        'hermes_bin': str(settings.hermes_bin),
+        'hermes_bin_exists': settings.hermes_bin.exists(),
     }
+    assert payload['runtime']['active_profile'] == 'default'
+    assert 'profile_count' in payload['runtime']
+    assert 'gateway_state' in payload['runtime']
 
 
 def test_system_version_contract_is_available() -> None:

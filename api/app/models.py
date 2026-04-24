@@ -20,12 +20,51 @@ class AdapterDescriptor(BaseModel):
     hermes_bin_exists: bool
 
 
+class DiagnosticsRuntimeSummary(BaseModel):
+    active_profile: str | None = None
+    profile_count: int = 0
+    session_count: int = 0
+    cron_job_count: int = 0
+    gateway_state: str | None = None
+    status_excerpt: list[str] = Field(default_factory=list)
+
+
 class SystemHealthResponse(BaseModel):
     status: Literal["ok"]
     service: str
     api_version: str
     app_version: str
     adapter: AdapterDescriptor
+    runtime: DiagnosticsRuntimeSummary
+
+
+class DiagnosticsCheck(BaseModel):
+    name: str
+    ok: bool
+    detail: str
+    severity: Literal['info', 'warning', 'error'] = 'info'
+
+
+class SystemDoctorResponse(BaseModel):
+    status: Literal['ok', 'warning']
+    checks: list[DiagnosticsCheck] = Field(default_factory=list)
+
+
+class SetupCheckItem(BaseModel):
+    key: str
+    configured: bool
+    value: str
+
+
+class SetupCheckResponse(BaseModel):
+    status: Literal['ok', 'warning']
+    items: list[SetupCheckItem] = Field(default_factory=list)
+
+
+class AgentDiagnosticsResponse(BaseModel):
+    agent_id: str
+    status: Literal['ok', 'warning']
+    checks: list[DiagnosticsCheck] = Field(default_factory=list)
 
 
 class SystemVersionResponse(BaseModel):

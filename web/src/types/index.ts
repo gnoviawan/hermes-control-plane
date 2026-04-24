@@ -312,6 +312,58 @@ export interface LogEntry {
   message: string
 }
 
+export interface DiagnosticsRuntimeRecord {
+  activeProfile?: string
+  profileCount: number
+  sessionCount: number
+  cronJobCount: number
+  gatewayState?: string
+  statusExcerpt: string[]
+}
+
+export interface SystemHealthRecord {
+  status: 'ok'
+  service: string
+  apiVersion: string
+  appVersion: string
+  adapter: {
+    kind: string
+    hermesHome: string
+    hermesBin: string
+    hermesBinExists: boolean
+  }
+  runtime: DiagnosticsRuntimeRecord
+}
+
+export interface DiagnosticsCheckRecord {
+  name: string
+  ok: boolean
+  detail: string
+  severity: 'info' | 'warning' | 'error'
+}
+
+export interface SystemDoctorRecord {
+  status: 'ok' | 'warning'
+  checks: DiagnosticsCheckRecord[]
+}
+
+export interface SetupCheckItemRecord {
+  key: string
+  configured: boolean
+  value: string
+}
+
+export interface SetupCheckRecord {
+  status: 'ok' | 'warning'
+  items: SetupCheckItemRecord[]
+}
+
+export interface AgentDiagnosticsRecord {
+  agentId: string
+  status: 'ok' | 'warning'
+  checks: DiagnosticsCheckRecord[]
+}
+
 export interface ApiResult<T> {
   data: T
   mock: boolean
