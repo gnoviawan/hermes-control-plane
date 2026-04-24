@@ -20,6 +20,7 @@ from app.models import (
     AgentCronJobPatchRequest,
     AgentCronJobsResponse,
     AgentDefaults,
+    AgentEnvResponse,
     AgentFiles,
     AgentMemoryProvidersResponse,
     AgentMemoryResponse,
@@ -74,6 +75,7 @@ from app.models import (
     StatusResponse,
     SystemAllowlistsResponse,
     SystemDoctorResponse,
+    SystemEnvCatalogResponse,
     SystemGatewayPatchRequest,
     SystemGatewayPlatformsResponse,
     SystemGatewayResponse,
@@ -107,6 +109,7 @@ from app.services.hermes_adapter import (
 from app.services.config_service import config_service
 from app.services.cron_service import cron_service
 from app.services.diagnostics_service import diagnostics_service
+from app.services.env_service import env_service
 from app.services.gateway_service import gateway_service
 from app.services.mcp_service import mcp_service
 from app.services.memory_service import memory_service
@@ -188,6 +191,11 @@ def get_system_plugins() -> SystemPluginsResponse:
 @app.get('/api/system/providers', response_model=ProviderCatalogResponse, tags=['system'])
 def get_system_providers() -> ProviderCatalogResponse:
     return provider_service.list_providers()
+
+
+@app.get('/api/system/env/catalog', response_model=SystemEnvCatalogResponse, tags=['system'])
+def get_system_env_catalog() -> SystemEnvCatalogResponse:
+    return env_service.get_catalog()
 
 
 @app.get('/api/system/models', response_model=ModelCatalogResponse, tags=['system'])
@@ -635,6 +643,12 @@ def get_agent_logs(
 def get_agent_config(agent_id: str) -> AgentConfigResponse:
     ensure_profile_exists(agent_id)
     return config_service.get_config(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/env', response_model=AgentEnvResponse, tags=['config'])
+def get_agent_env(agent_id: str) -> AgentEnvResponse:
+    ensure_profile_exists(agent_id)
+    return env_service.get_agent_env(agent_id)
 
 
 @app.get('/api/agents/{agent_id}/config/schema', response_model=AgentConfigSchemaResponse, tags=['config'])
