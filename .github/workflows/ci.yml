@@ -21,6 +21,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run build:ci
+      - run: npm run smoke:routes
       - run: npm run lint
 
   backend:
