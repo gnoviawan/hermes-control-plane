@@ -223,6 +223,26 @@ export interface SystemMemoryProfileRecord {
   userEntries: number
 }
 
+export interface WorkspaceTreeEntryRecord {
+  name: string
+  path: string
+  type: 'file' | 'directory'
+  sizeBytes?: number
+}
+
+export interface WorkspaceArtifactRecord {
+  name: string
+  path: string
+  kind: 'file' | 'directory'
+  sizeBytes?: number
+}
+
+export interface CheckpointRecord {
+  id: string
+  path: string
+  status: string
+}
+
 export interface ApprovalRecord {
   id: string
   agentId: string

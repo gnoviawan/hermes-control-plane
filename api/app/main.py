@@ -34,7 +34,11 @@ from app.models import (
     AgentSkillsResponse,
     AgentSessionsResponse,
     AgentSummary,
+    AgentCheckpointsResponse,
+    AgentWorkspaceArtifactsResponse,
+    AgentWorkspaceTreeResponse,
     ApprovalQueueResponse,
+    CheckpointRestoreResponse,
     ConfigSummary,
     CreateProfileRequest,
     HealthResponse,
@@ -70,6 +74,7 @@ from app.models import (
     ToolInfo,
     ToolsetPatchRequest,
     ToolsetResponse,
+    WorkspaceFileResponse,
 )
 from app.services.hermes_adapter import (
     active_profile_name,
@@ -96,6 +101,7 @@ from app.services.security_service import security_service
 from app.services.session_service import session_service
 from app.services.skill_service import skill_service
 from app.services.tool_service import tool_service
+from app.services.workspace_service import workspace_service
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
 
@@ -374,6 +380,36 @@ def delete_agent_memory(agent_id: str, payload: MemoryEntryDeleteRequest) -> Mem
 def list_agent_memory_providers(agent_id: str) -> AgentMemoryProvidersResponse:
     ensure_profile_exists(agent_id)
     return memory_service.list_providers(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/workspace/tree', response_model=AgentWorkspaceTreeResponse, tags=['workspace'])
+def list_agent_workspace_tree(agent_id: str) -> AgentWorkspaceTreeResponse:
+    ensure_profile_exists(agent_id)
+    return workspace_service.list_tree(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/workspace/file', response_model=WorkspaceFileResponse, tags=['workspace'])
+def get_agent_workspace_file(agent_id: str, path: str = Query(...)) -> WorkspaceFileResponse:
+    ensure_profile_exists(agent_id)
+    return workspace_service.read_file(agent_id, path)
+
+
+@app.get('/api/agents/{agent_id}/workspace/artifacts', response_model=AgentWorkspaceArtifactsResponse, tags=['workspace'])
+def list_agent_workspace_artifacts(agent_id: str) -> AgentWorkspaceArtifactsResponse:
+    ensure_profile_exists(agent_id)
+    return workspace_service.list_artifacts(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/checkpoints', response_model=AgentCheckpointsResponse, tags=['workspace'])
+def list_agent_checkpoints(agent_id: str) -> AgentCheckpointsResponse:
+    ensure_profile_exists(agent_id)
+    return workspace_service.list_checkpoints(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/checkpoints/{checkpoint_id}/restore', response_model=CheckpointRestoreResponse, tags=['workspace'])
+def restore_agent_checkpoint(agent_id: str, checkpoint_id: str) -> CheckpointRestoreResponse:
+    ensure_profile_exists(agent_id)
+    return workspace_service.restore_checkpoint(agent_id, checkpoint_id)
 
 
 @app.get('/api/agents/{agent_id}/approvals', response_model=ApprovalQueueResponse, tags=['security'])
