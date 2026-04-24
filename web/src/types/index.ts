@@ -189,6 +189,19 @@ export interface ToolRecord {
   schemaSummary: Record<string, unknown>
 }
 
+export interface McpServerRecord {
+  id: string
+  name: string
+  transport: 'stdio' | 'http'
+  enabled: boolean
+  connectionState: string
+  authState: string
+  discoveredToolsCount: number
+  lastReloadAt?: string
+  samplingEnabled: boolean
+  profiles: string[]
+}
+
 export interface ApprovalRecord {
   id: string
   agentId: string

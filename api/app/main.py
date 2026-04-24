@@ -19,6 +19,7 @@ from app.models import (
     AgentCronJobsResponse,
     AgentDefaults,
     AgentFiles,
+    AgentMcpServersResponse,
     AgentRuntimeCollection,
     AgentRuntimeHints,
     AgentRuntimeSummary,
@@ -36,6 +37,8 @@ from app.models import (
     CreateProfileRequest,
     HealthResponse,
     LogEntry,
+    McpReloadResponse,
+    McpServerInfo,
     ModelCatalogResponse,
     ProviderCatalogResponse,
     ProviderRoutingPatchRequest,
@@ -51,6 +54,7 @@ from app.models import (
     StatusResponse,
     SystemAllowlistsResponse,
     SystemHealthResponse,
+    SystemMcpServersResponse,
     SystemSecurityResponse,
     SystemSkillsLibraryResponse,
     SystemVersionResponse,
@@ -75,6 +79,7 @@ from app.services.hermes_adapter import (
 )
 from app.services.config_service import config_service
 from app.services.cron_service import cron_service
+from app.services.mcp_service import mcp_service
 from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
@@ -171,6 +176,11 @@ def get_system_toolsets() -> ToolsetResponse:
 @app.get('/api/system/tools', response_model=ToolCatalogResponse, tags=['system'])
 def get_system_tools() -> ToolCatalogResponse:
     return tool_service.list_system_tools()
+
+
+@app.get('/api/system/mcp/servers', response_model=SystemMcpServersResponse, tags=['mcp'])
+def get_system_mcp_servers() -> SystemMcpServersResponse:
+    return mcp_service.list_system_servers()
 
 
 @app.get('/api/system/security', response_model=SystemSecurityResponse, tags=['system'])
@@ -290,6 +300,36 @@ def patch_agent_toolsets(agent_id: str, payload: ToolsetPatchRequest) -> Toolset
 def list_agent_tools(agent_id: str) -> ToolCatalogResponse:
     ensure_profile_exists(agent_id)
     return tool_service.list_agent_tools(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/mcp/servers', response_model=AgentMcpServersResponse, tags=['mcp'])
+def list_agent_mcp_servers(agent_id: str) -> AgentMcpServersResponse:
+    ensure_profile_exists(agent_id)
+    return mcp_service.list_agent_servers(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/mcp/tools', response_model=ToolCatalogResponse, tags=['mcp'])
+def list_agent_mcp_tools(agent_id: str) -> ToolCatalogResponse:
+    ensure_profile_exists(agent_id)
+    return mcp_service.list_agent_tools(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/mcp/reload', response_model=McpReloadResponse, tags=['mcp'])
+def reload_agent_mcp_servers(agent_id: str) -> McpReloadResponse:
+    ensure_profile_exists(agent_id)
+    return mcp_service.reload_agent_servers(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/mcp/{server_id}/connect', response_model=McpServerInfo, tags=['mcp'])
+def connect_agent_mcp_server(agent_id: str, server_id: str) -> McpServerInfo:
+    ensure_profile_exists(agent_id)
+    return mcp_service.connect_server(agent_id, server_id)
+
+
+@app.post('/api/agents/{agent_id}/mcp/{server_id}/disconnect', response_model=McpServerInfo, tags=['mcp'])
+def disconnect_agent_mcp_server(agent_id: str, server_id: str) -> McpServerInfo:
+    ensure_profile_exists(agent_id)
+    return mcp_service.disconnect_server(agent_id, server_id)
 
 
 @app.get('/api/agents/{agent_id}/approvals', response_model=ApprovalQueueResponse, tags=['security'])

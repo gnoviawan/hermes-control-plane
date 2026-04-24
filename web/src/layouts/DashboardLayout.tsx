@@ -1,4 +1,5 @@
 import {
+  ApiOutlined,
   ClockCircleOutlined,
   ConsoleSqlOutlined,
   FileTextOutlined,
@@ -26,6 +27,7 @@ const navigationItems: MenuProps['items'] = [
       { key: '/console', icon: <ConsoleSqlOutlined />, label: 'Console' },
       { key: '/sessions', icon: <RadarChartOutlined />, label: 'Sessions' },
       { key: '/tools', icon: <ToolOutlined />, label: 'Tools' },
+      { key: '/mcp', icon: <ApiOutlined />, label: 'MCP' },
       { key: '/security', icon: <SafetyCertificateOutlined />, label: 'Security' },
       { key: '/cron-jobs', icon: <ClockCircleOutlined />, label: 'Cron Jobs' },
       { key: '/logs', icon: <FileTextOutlined />, label: 'Logs' },
