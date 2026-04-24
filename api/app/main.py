@@ -78,6 +78,7 @@ from app.models import (
     SystemHealthResponse,
     SystemMcpServersResponse,
     SystemMemorySummaryResponse,
+    SystemPluginsResponse,
     SystemSecurityResponse,
     SystemSkillsLibraryResponse,
     SystemVersionResponse,
@@ -107,6 +108,7 @@ from app.services.diagnostics_service import diagnostics_service
 from app.services.gateway_service import gateway_service
 from app.services.mcp_service import mcp_service
 from app.services.memory_service import memory_service
+from app.services.plugin_service import plugin_service
 from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
@@ -174,6 +176,11 @@ def get_system_version() -> SystemVersionResponse:
 @app.get('/api/system/setup/check', response_model=SetupCheckResponse, tags=['system'])
 def get_system_setup_check() -> SetupCheckResponse:
     return diagnostics_service.get_setup_check()
+
+
+@app.get('/api/system/plugins', response_model=SystemPluginsResponse, tags=['system'])
+def get_system_plugins() -> SystemPluginsResponse:
+    return plugin_service.list_plugins()
 
 
 @app.get('/api/system/providers', response_model=ProviderCatalogResponse, tags=['system'])

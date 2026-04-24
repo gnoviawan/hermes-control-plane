@@ -44,6 +44,7 @@ const navigationItems: MenuProps['items'] = [
     label: 'Settings',
     children: [
       { key: '/profiles', icon: <ProfileOutlined />, label: 'Profiles' },
+      { key: '/plugins', icon: <ApiOutlined />, label: 'Plugins' },
       { key: '/config', icon: <SettingOutlined />, label: 'Config' },
       { key: '/providers-models', icon: <SwapOutlined />, label: 'Providers & Models' },
       { key: '/skills', icon: <ToolOutlined />, label: 'Skills' },

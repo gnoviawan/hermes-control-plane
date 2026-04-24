@@ -8,6 +8,8 @@ import { LogsPage } from './pages/LogsPage'
 import { McpPage } from './pages/McpPage'
 import { MemoryPage } from './pages/MemoryPage'
 import { OverviewPage } from './pages/OverviewPage'
+import { PluginExtensionPage } from './pages/PluginExtensionPage'
+import { PluginsPage } from './pages/PluginsPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ProvidersPage } from './pages/ProvidersPage'
 import { SecurityPage } from './pages/SecurityPage'
@@ -24,6 +26,8 @@ function App() {
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/console" element={<ConsolePage />} />
         <Route path="/profiles" element={<ProfilesPage />} />
+        <Route path="/plugins" element={<PluginsPage />} />
+        <Route path="/plugins/:pluginId/:extensionKey" element={<PluginExtensionPage />} />
         <Route path="/skills" element={<SkillsPage />} />
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/mcp" element={<McpPage />} />

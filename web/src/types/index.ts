@@ -364,6 +364,39 @@ export interface AgentDiagnosticsRecord {
   checks: DiagnosticsCheckRecord[]
 }
 
+export type PluginSlotKind = 'page_route' | 'dashboard_widget' | 'tool_result_renderer'
+
+export interface PluginSlotDescriptorRecord {
+  kind: PluginSlotKind
+  title: string
+  description: string
+}
+
+export interface PluginExtensionRecord {
+  key: string
+  kind: PluginSlotKind
+  title: string
+  description: string
+  target: string
+  path?: string
+}
+
+export interface DashboardPluginRecord {
+  id: string
+  name: string
+  version: string
+  enabled: boolean
+  source: string
+  description: string
+  extensions: PluginExtensionRecord[]
+}
+
+export interface SystemPluginsRecord {
+  supportedSlots: PluginSlotDescriptorRecord[]
+  plugins: DashboardPluginRecord[]
+  totalPlugins: number
+}
+
 export interface ApiResult<T> {
   data: T
   mock: boolean
