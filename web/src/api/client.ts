@@ -134,16 +134,20 @@ type BackendSessionDetailResponse = {
 }
 
 type BackendCronJobsResponse = {
-  profile: string
+  agent_id?: string
+  profile?: string
   jobs: Array<{
     id: string
     name?: string | null
+    prompt_preview?: string | null
+    skills?: string[] | null
     schedule?: string | null
-    enabled: boolean
-    state?: string | null
+    enabled?: boolean | null
+    status?: string | null
+    last_status?: string | null
     next_run_at?: string | null
     last_run_at?: string | null
-    last_status?: string | null
+    deliver_target?: string | null
     deliver?: string | null
   }>
   total: number
@@ -400,16 +404,23 @@ const normalizeSessionDetail = (payload: BackendSessionDetailResponse): SessionD
   })),
 })
 
-const normalizeCronJobs = (payload: BackendCronJobsResponse): CronJob[] =>
-  payload.jobs.map((job) => ({
+const normalizeCronJobs = (payload: BackendCronJobsResponse): CronJob[] => {
+  const profileId = payload.agent_id ?? payload.profile ?? 'default'
+  return payload.jobs.map((job) => ({
     id: job.id,
     name: job.name ?? job.id,
+    profileId,
+    promptPreview: job.prompt_preview ?? undefined,
+    skills: job.skills ?? [],
     schedule: job.schedule ?? '—',
-    profileId: payload.profile,
-    enabled: job.enabled,
-    lastRun: job.last_run_at ?? 'Paused',
-    nextRun: job.next_run_at ?? 'Paused',
+    enabled: job.enabled ?? job.status !== 'paused',
+    status: job.status ?? (job.enabled ? 'scheduled' : 'paused'),
+    lastStatus: job.last_status ?? undefined,
+    lastRun: job.last_run_at ?? undefined,
+    nextRun: job.next_run_at ?? undefined,
+    deliverTarget: job.deliver_target ?? job.deliver ?? undefined,
   }))
+}
 
 const inferLogLevel = (line: string): LogEntry['level'] => {
   const upper = line.toUpperCase()
@@ -770,13 +781,11 @@ export const apiClient = {
         .sort(compareRunsByStartedAtDesc),
     ),
 
-  getCronJobs: async (): Promise<ApiResult<CronJob[]>> =>
+  getCronJobs: async (profileId: string): Promise<ApiResult<CronJob[]>> =>
     withFallback(async () => {
-      const profilesPayload = await fetchJson<BackendProfilesResponse>('/profiles')
-      const activeProfileId = profilesPayload.active_profile || profilesPayload.profiles[0]?.name || 'default'
-      const payload = await fetchJson<BackendCronJobsResponse>(`/cron/jobs?profile=${encodeURIComponent(activeProfileId)}`)
+      const payload = await fetchJson<BackendCronJobsResponse>(`/agents/${encodeURIComponent(profileId)}/cron/jobs`)
       return normalizeCronJobs(payload)
-    }, () => structuredClone(mockCronJobs)),
+    }, () => structuredClone(mockCronJobs).filter((job) => job.profileId === profileId)),
 
   getLogs: async (): Promise<ApiResult<LogEntry[]>> =>
     withFallback(async () => {
