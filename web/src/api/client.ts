@@ -1,6 +1,8 @@
 import {
   mockAgentConfig,
   mockAgentConfigSchema,
+  mockConfigReload,
+  mockConfigValidation,
   mockAgentSecurity,
   mockApprovals,
   mockCheckpoints,
@@ -36,7 +38,9 @@ import {
 } from './mockData'
 import type {
   AgentConfigRecord,
+  AgentConfigReloadRecord,
   AgentConfigSchemaRecord,
+  AgentConfigValidationRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApiResult,
@@ -368,6 +372,24 @@ type BackendAgentConfigSchemaResponse = {
   editable_count: number
   deferred_count: number
   forbidden_count: number
+}
+
+type BackendAgentConfigValidationResponse = {
+  agent_id: string
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+  changed_keys: string[]
+  requires_reload: boolean
+  requires_restart: boolean
+  requires_new_session: boolean
+}
+
+type BackendAgentConfigReloadResponse = {
+  agent_id: string
+  path: string
+  reloaded: boolean
+  message: string
 }
 
 type BackendProvidersResponse = {
@@ -886,6 +908,24 @@ const normalizeAgentConfigSchema = (payload: BackendAgentConfigSchemaResponse): 
   forbiddenCount: payload.forbidden_count,
 })
 
+const normalizeConfigValidation = (payload: BackendAgentConfigValidationResponse): AgentConfigValidationRecord => ({
+  agentId: payload.agent_id,
+  valid: payload.valid,
+  errors: payload.errors,
+  warnings: payload.warnings,
+  changedKeys: payload.changed_keys,
+  requiresReload: payload.requires_reload,
+  requiresRestart: payload.requires_restart,
+  requiresNewSession: payload.requires_new_session,
+})
+
+const normalizeConfigReload = (payload: BackendAgentConfigReloadResponse): AgentConfigReloadRecord => ({
+  agentId: payload.agent_id,
+  path: payload.path,
+  reloaded: payload.reloaded,
+  message: payload.message,
+})
+
 const normalizeProviders = (payload: BackendProvidersResponse): ProviderCatalogRecord[] =>
   payload.providers.map((provider) => ({
     name: provider.name,
@@ -1386,6 +1426,44 @@ export const apiClient = {
       return normalizeAgentConfigSchema(payload)
     }, () => ({
       ...structuredClone(mockAgentConfigSchema),
+      agentId: profileId,
+      path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
+    })),
+
+  validateAgentConfig: async (profileId: string, payload: Record<string, unknown>): Promise<ApiResult<AgentConfigValidationRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendAgentConfigValidationResponse>(`/agents/${encodeURIComponent(profileId)}/config/validate`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      return normalizeConfigValidation(result)
+    }, () => ({
+      ...structuredClone(mockConfigValidation),
+      agentId: profileId,
+      changedKeys: Object.keys(payload).length > 0 ? structuredClone(mockConfigValidation.changedKeys) : [],
+    })),
+
+  patchAgentConfig: async (profileId: string, payload: Record<string, unknown>): Promise<ApiResult<AgentConfigRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendAgentConfigResponse>(`/agents/${encodeURIComponent(profileId)}/config`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      })
+      return normalizeAgentConfig(result)
+    }, () => ({
+      ...structuredClone(mockAgentConfig),
+      agentId: profileId,
+      path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
+    })),
+
+  reloadAgentConfig: async (profileId: string): Promise<ApiResult<AgentConfigReloadRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendAgentConfigReloadResponse>(`/agents/${encodeURIComponent(profileId)}/config/reload`, {
+        method: 'POST',
+      })
+      return normalizeConfigReload(result)
+    }, () => ({
+      ...structuredClone(mockConfigReload),
       agentId: profileId,
       path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
     })),
