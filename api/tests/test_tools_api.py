@@ -98,3 +98,20 @@ def test_agent_toolsets_patch_replaces_enabled_toolsets(tmp_path, monkeypatch) -
     assert [item['name'] for item in payload['toolsets']] == ['browser']
     stored = yaml.safe_load(config_path.read_text(encoding='utf-8'))
     assert stored['toolsets'] == ['browser']
+
+
+def test_agent_toolsets_patch_rejects_malformed_yaml_without_overwriting_file(tmp_path, monkeypatch) -> None:
+    from app.services import tool_service as tool_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    malformed = 'toolsets: [hermes-cli\n'
+    config_path.write_text(malformed, encoding='utf-8')
+
+    monkeypatch.setattr(tool_service_module, 'ensure_profile_exists', lambda profile='default': SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.patch('/api/agents/default/toolsets', json={'toolsets': ['browser']})
+
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'Cannot update toolsets because config.yaml is unreadable or malformed.'
+    assert config_path.read_text(encoding='utf-8') == malformed

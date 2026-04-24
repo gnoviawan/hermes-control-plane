@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from threading import RLock
 from typing import Any
 
 import yaml
+from fastapi import HTTPException
 
 from app.models import ToolCatalogResponse, ToolInfo, ToolsetInfo, ToolsetPatchRequest, ToolsetResponse
 from app.services.hermes_adapter import ensure_profile_exists, profile_contexts
@@ -30,7 +32,7 @@ class ToolService:
         context = ensure_profile_exists(agent_id)
         config_path = context.home / 'config.yaml'
         with _WRITE_LOCK:
-            config = load_yaml_file(config_path)
+            config = self._load_writable_config(config_path)
             config['toolsets'] = payload.toolsets
             self._atomic_write_yaml(config_path, config)
         return self.list_agent_toolsets(agent_id)
@@ -105,12 +107,32 @@ class ToolService:
     def _builtin_tools(self, toolset: str) -> list[str]:
         return _BUILTIN_TOOLSETS.get(toolset, [])
 
+    def _load_writable_config(self, path: Path) -> dict[str, Any]:
+        if not path.exists():
+            return {}
+        try:
+            raw = yaml.safe_load(path.read_text(encoding='utf-8'))
+        except (OSError, yaml.YAMLError) as exc:
+            raise HTTPException(status_code=409, detail='Cannot update toolsets because config.yaml is unreadable or malformed.') from exc
+        if raw is None:
+            return {}
+        if not isinstance(raw, dict):
+            raise HTTPException(status_code=409, detail='Cannot update toolsets because config.yaml is unreadable or malformed.')
+        return raw
+
     def _atomic_write_yaml(self, path: Path, payload: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile('w', encoding='utf-8', dir=path.parent, delete=False) as handle:
-            yaml.safe_dump(payload, handle, sort_keys=False)
-            temp_path = Path(handle.name)
-        temp_path.replace(path)
+        temp_path: Path | None = None
+        try:
+            with NamedTemporaryFile('w', encoding='utf-8', dir=path.parent, delete=False) as handle:
+                yaml.safe_dump(payload, handle, sort_keys=False)
+                handle.flush()
+                os.fsync(handle.fileno())
+                temp_path = Path(handle.name)
+            temp_path.replace(path)
+        finally:
+            if temp_path is not None and temp_path.exists():
+                temp_path.unlink(missing_ok=True)
 
 
 tool_service = ToolService()
