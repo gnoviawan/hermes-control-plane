@@ -5,6 +5,7 @@ import { ConsolePage } from './pages/ConsolePage'
 import { CronJobsPage } from './pages/CronJobsPage'
 import { LogsPage } from './pages/LogsPage'
 import { McpPage } from './pages/McpPage'
+import { MemoryPage } from './pages/MemoryPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ProvidersPage } from './pages/ProvidersPage'
@@ -24,6 +25,7 @@ function App() {
         <Route path="/skills" element={<SkillsPage />} />
         <Route path="/tools" element={<ToolsPage />} />
         <Route path="/mcp" element={<McpPage />} />
+        <Route path="/memory" element={<MemoryPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/config" element={<ConfigPage />} />

@@ -19,6 +19,8 @@ from app.models import (
     AgentCronJobsResponse,
     AgentDefaults,
     AgentFiles,
+    AgentMemoryProvidersResponse,
+    AgentMemoryResponse,
     AgentMcpServersResponse,
     AgentRuntimeCollection,
     AgentRuntimeHints,
@@ -39,6 +41,11 @@ from app.models import (
     LogEntry,
     McpReloadResponse,
     McpServerInfo,
+    MemoryDeleteResponse,
+    MemoryEntry,
+    MemoryEntryCreateRequest,
+    MemoryEntryDeleteRequest,
+    MemoryEntryPatchRequest,
     ModelCatalogResponse,
     ProviderCatalogResponse,
     ProviderRoutingPatchRequest,
@@ -55,6 +62,7 @@ from app.models import (
     SystemAllowlistsResponse,
     SystemHealthResponse,
     SystemMcpServersResponse,
+    SystemMemorySummaryResponse,
     SystemSecurityResponse,
     SystemSkillsLibraryResponse,
     SystemVersionResponse,
@@ -80,6 +88,7 @@ from app.services.hermes_adapter import (
 from app.services.config_service import config_service
 from app.services.cron_service import cron_service
 from app.services.mcp_service import mcp_service
+from app.services.memory_service import memory_service
 from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
@@ -181,6 +190,11 @@ def get_system_tools() -> ToolCatalogResponse:
 @app.get('/api/system/mcp/servers', response_model=SystemMcpServersResponse, tags=['mcp'])
 def get_system_mcp_servers() -> SystemMcpServersResponse:
     return mcp_service.list_system_servers()
+
+
+@app.get('/api/system/memory', response_model=SystemMemorySummaryResponse, tags=['memory'])
+def get_system_memory_summary() -> SystemMemorySummaryResponse:
+    return memory_service.system_summary()
 
 
 @app.get('/api/system/security', response_model=SystemSecurityResponse, tags=['system'])
@@ -330,6 +344,36 @@ def connect_agent_mcp_server(agent_id: str, server_id: str) -> McpServerInfo:
 def disconnect_agent_mcp_server(agent_id: str, server_id: str) -> McpServerInfo:
     ensure_profile_exists(agent_id)
     return mcp_service.disconnect_server(agent_id, server_id)
+
+
+@app.get('/api/agents/{agent_id}/memory', response_model=AgentMemoryResponse, tags=['memory'])
+def list_agent_memory(agent_id: str) -> AgentMemoryResponse:
+    ensure_profile_exists(agent_id)
+    return memory_service.list_entries(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/memory', response_model=MemoryEntry, tags=['memory'])
+def create_agent_memory(agent_id: str, payload: MemoryEntryCreateRequest) -> MemoryEntry:
+    ensure_profile_exists(agent_id)
+    return memory_service.create_entry(agent_id, payload)
+
+
+@app.patch('/api/agents/{agent_id}/memory', response_model=MemoryEntry, tags=['memory'])
+def patch_agent_memory(agent_id: str, payload: MemoryEntryPatchRequest) -> MemoryEntry:
+    ensure_profile_exists(agent_id)
+    return memory_service.patch_entry(agent_id, payload)
+
+
+@app.delete('/api/agents/{agent_id}/memory', response_model=MemoryDeleteResponse, tags=['memory'])
+def delete_agent_memory(agent_id: str, payload: MemoryEntryDeleteRequest) -> MemoryDeleteResponse:
+    ensure_profile_exists(agent_id)
+    return memory_service.delete_entry(agent_id, payload)
+
+
+@app.get('/api/agents/{agent_id}/memory/providers', response_model=AgentMemoryProvidersResponse, tags=['memory'])
+def list_agent_memory_providers(agent_id: str) -> AgentMemoryProvidersResponse:
+    ensure_profile_exists(agent_id)
+    return memory_service.list_providers(agent_id)
 
 
 @app.get('/api/agents/{agent_id}/approvals', response_model=ApprovalQueueResponse, tags=['security'])
