@@ -14,6 +14,7 @@ import {
   mockSkills,
   mockSystemAllowlists,
   mockSystemSecurity,
+  mockSystemSkillLibrary,
   mockTools,
   mockToolsets,
 } from './mockData'
@@ -37,6 +38,7 @@ import type {
   SkillBroadcastPayload,
   SystemAllowlistsRecord,
   SystemSecurityRecord,
+  SystemSkillLibraryRecord,
   ToggleSkillPayload,
   ToolRecord,
   ToolsetRecord,
@@ -81,16 +83,33 @@ type BackendStatusResponse = {
 }
 
 type BackendSkillsResponse = {
-  profile: string
+  profile?: string
+  agent_id?: string
   total: number
   skills: Array<{
     name: string
     category?: string | null
+    description?: string | null
     source?: string | null
     trust?: string | null
     enabled: boolean
+    installed?: boolean | null
     path?: string | null
+    updated_at?: string | null
   }>
+}
+
+type BackendSystemSkillsResponse = {
+  skills: Array<{
+    name: string
+    category?: string | null
+    description?: string | null
+    source?: string | null
+    installed_profiles: string[]
+    profile_count: number
+    updated_at?: string | null
+  }>
+  total: number
 }
 
 type BackendSessionsResponse = {
@@ -357,10 +376,25 @@ const normalizeSkills = (payload: BackendSkillsResponse, profileId: string): Ski
   payload.skills.map((skill) => ({
     id: skill.name,
     name: skill.name,
-    description: [skill.source, skill.trust].filter(Boolean).join(' · ') || skill.path || 'Filesystem skill',
+    description: skill.description ?? ([skill.source, skill.trust].filter(Boolean).join(' · ') || skill.path || 'Filesystem skill'),
     category: skill.category ?? 'uncategorized',
+    source: skill.source ?? undefined,
+    installed: skill.installed ?? true,
+    enabled: skill.enabled,
     enabledProfiles: skill.enabled ? [profileId] : [],
-    updatedAt: isoNow(),
+    installedProfiles: (skill.installed ?? true) ? [profileId] : [],
+    updatedAt: skill.updated_at ?? isoNow(),
+  }))
+
+const normalizeSystemSkillLibrary = (payload: BackendSystemSkillsResponse): SystemSkillLibraryRecord[] =>
+  payload.skills.map((skill) => ({
+    name: skill.name,
+    category: skill.category ?? 'uncategorized',
+    description: skill.description ?? 'Filesystem skill',
+    source: skill.source ?? undefined,
+    installedProfiles: skill.installed_profiles,
+    profileCount: skill.profile_count,
+    updatedAt: skill.updated_at ?? undefined,
   }))
 
 const normalizeSessions = (payload: BackendSessionsResponse): SessionRecord[] =>
@@ -674,26 +708,56 @@ export const apiClient = {
 
   getSkills: async (profileId: string): Promise<ApiResult<Skill[]>> =>
     withFallback(async () => {
-      const payload = await fetchJson<BackendSkillsResponse>(`/skills?profile=${encodeURIComponent(profileId)}`)
+      const payload = await fetchJson<BackendSkillsResponse>(`/agents/${encodeURIComponent(profileId)}/skills`)
       return normalizeSkills(payload, profileId)
-    }, cloneSkills),
+    }, () => cloneSkills().filter((skill) => skill.installedProfiles.includes(profileId))),
+
+  getSystemSkillLibrary: async (): Promise<ApiResult<SystemSkillLibraryRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemSkillsResponse>('/system/skills/catalog')
+      return normalizeSystemSkillLibrary(payload)
+    }, () => structuredClone(mockSystemSkillLibrary)),
 
   toggleSkill: async (profileId: string, skillId: string, payload: ToggleSkillPayload): Promise<ApiResult<Skill>> => {
-    await delay(150)
-    const baseSkill = cloneSkills().find((skill) => skill.id === skillId) ?? cloneSkills()[0]
-    const enabledProfiles = payload.enabled
-      ? Array.from(new Set([...baseSkill.enabledProfiles, profileId]))
-      : baseSkill.enabledProfiles.filter((item) => item !== profileId)
+    try {
+      const result = await fetchJson<BackendSkillsResponse['skills'][number]>(`/agents/${encodeURIComponent(profileId)}/skills/${encodeURIComponent(skillId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: payload.enabled }),
+      })
+      return {
+        data: normalizeSkills({ agent_id: profileId, total: 1, skills: [result] }, profileId)[0],
+        mock: false,
+      }
+    } catch (error) {
+      await delay(150)
+      const baseSkill = cloneSkills().find((skill) => skill.id === skillId) ?? cloneSkills()[0]
+      const enabledProfiles = payload.enabled
+        ? Array.from(new Set([...baseSkill.enabledProfiles, profileId]))
+        : baseSkill.enabledProfiles.filter((item) => item !== profileId)
+      const installedProfiles = baseSkill.installedProfiles.includes(profileId)
+        ? baseSkill.installedProfiles
+        : [...baseSkill.installedProfiles, profileId]
 
-    return {
-      data: {
-        ...baseSkill,
-        enabledProfiles,
-      },
-      mock: true,
-      error: 'Skill toggling is not wired to the backend yet; showing optimistic mock state.',
+      return {
+        data: {
+          ...baseSkill,
+          enabled: payload.enabled,
+          enabledProfiles,
+          installedProfiles,
+        },
+        mock: true,
+        error: error instanceof Error ? error.message : NETWORK_ERROR,
+      }
     }
   },
+
+  runSkill: async (profileId: string, skillId: string): Promise<ApiResult<{ status: string; message: string }>> =>
+    withFallback(async () => {
+      const result = await fetchJson<{ status: string; message: string }>(`/agents/${encodeURIComponent(profileId)}/skills/${encodeURIComponent(skillId)}/run`, {
+        method: 'POST',
+      })
+      return result
+    }, () => ({ status: 'queued', message: `Skill ${skillId} queued for execution on ${profileId}.` })),
 
   broadcastSkills: async (payload: SkillBroadcastPayload): Promise<ApiResult<{ synced: number }>> => {
     try {
