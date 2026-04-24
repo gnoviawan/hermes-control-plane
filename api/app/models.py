@@ -414,6 +414,11 @@ class AgentConfigPatchRequest(BaseModel):
     model: dict[str, Any] | None = None
     display: dict[str, Any] | None = None
     runtime: dict[str, Any] | None = None
+    browser: dict[str, Any] | None = None
+    terminal: dict[str, Any] | None = None
+    approvals: dict[str, Any] | None = None
+    memory: dict[str, Any] | None = None
+    security: dict[str, Any] | None = None
     providers: dict[str, Any] | None = None
     fallback_providers: list[Any] | None = None
 

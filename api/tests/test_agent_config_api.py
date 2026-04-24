@@ -119,7 +119,12 @@ def test_agent_config_schema_endpoint_returns_grouped_field_metadata(tmp_path, m
         config_path,
         {
             'model': {'default': 'gpt-5.4', 'provider': 'custom'},
-            'display': {'personality': 'creative'},
+            'display': {'personality': 'creative', 'streaming': True, 'show_reasoning': True, 'inline_diffs': False},
+            'browser': {'allow_private_urls': False},
+            'terminal': {'timeout': 180},
+            'approvals': {'mode': 'manual'},
+            'memory': {'user_profile_enabled': True},
+            'security': {'redact_secrets': True},
             'providers': {'custom': {'api_key': 'super-secret'}},
             'runtime': {'checkpoints_enabled': True, 'worktree_enabled': False},
             'fallback_providers': ['backup-a'],
@@ -134,13 +139,13 @@ def test_agent_config_schema_endpoint_returns_grouped_field_metadata(tmp_path, m
     assert response.status_code == 200
     payload = response.json()
     assert payload['agent_id'] == 'default'
-    assert payload['field_count'] >= 5
-    assert payload['editable_count'] >= 5
+    assert payload['field_count'] >= 12
+    assert payload['editable_count'] >= 12
     assert payload['deferred_count'] >= 2
     assert payload['forbidden_count'] == 0
 
     sections = {section['key']: section for section in payload['sections']}
-    assert {'model', 'display', 'runtime'} <= sections.keys()
+    assert {'model', 'display', 'runtime', 'browser', 'terminal', 'approvals', 'memory', 'security'} <= sections.keys()
 
     model_fields = {field['key']: field for field in sections['model']['fields']}
     assert model_fields['model.default']['status'] == 'editable'
@@ -151,6 +156,29 @@ def test_agent_config_schema_endpoint_returns_grouped_field_metadata(tmp_path, m
     runtime_fields = {field['key']: field for field in sections['runtime']['fields']}
     assert runtime_fields['runtime.checkpoints_enabled']['type'] == 'boolean'
     assert runtime_fields['runtime.checkpoints_enabled']['value'] is True
+
+    display_fields = {field['key']: field for field in sections['display']['fields']}
+    assert display_fields['display.streaming']['type'] == 'boolean'
+    assert display_fields['display.streaming']['value'] is True
+    assert display_fields['display.show_reasoning']['value'] is True
+    assert display_fields['display.inline_diffs']['value'] is False
+
+    browser_fields = {field['key']: field for field in sections['browser']['fields']}
+    assert browser_fields['browser.allow_private_urls']['type'] == 'boolean'
+    assert browser_fields['browser.allow_private_urls']['impact'] == 'restart'
+
+    terminal_fields = {field['key']: field for field in sections['terminal']['fields']}
+    assert terminal_fields['terminal.timeout']['type'] == 'number'
+    assert terminal_fields['terminal.timeout']['value'] == 180
+
+    approvals_fields = {field['key']: field for field in sections['approvals']['fields']}
+    assert approvals_fields['approvals.mode']['options'] == ['manual', 'auto', 'yolo']
+
+    memory_fields = {field['key']: field for field in sections['memory']['fields']}
+    assert memory_fields['memory.user_profile_enabled']['value'] is True
+
+    security_fields = {field['key']: field for field in sections['security']['fields']}
+    assert security_fields['security.redact_secrets']['value'] is True
 
     deferred_fields = {field['key']: field for field in payload['deferred_fields']}
     assert deferred_fields['providers.custom.api_key']['status'] == 'deferred'
@@ -167,8 +195,13 @@ def test_agent_config_validate_endpoint_reports_change_effects(tmp_path, monkeyp
         config_path,
         {
             'model': {'default': 'gpt-5.4', 'provider': 'custom'},
-            'display': {'personality': 'creative'},
+            'display': {'personality': 'creative', 'streaming': False, 'show_reasoning': False, 'inline_diffs': True},
             'runtime': {'checkpoints_enabled': True, 'worktree_enabled': False},
+            'browser': {'allow_private_urls': False},
+            'terminal': {'timeout': 180},
+            'approvals': {'mode': 'manual'},
+            'memory': {'user_profile_enabled': True},
+            'security': {'redact_secrets': True},
         },
     )
 
@@ -178,8 +211,13 @@ def test_agent_config_validate_endpoint_reports_change_effects(tmp_path, monkeyp
     response = client.post(
         '/api/agents/default/config/validate',
         json={
-            'display': {'personality': 'focused'},
+            'display': {'personality': 'focused', 'streaming': True, 'show_reasoning': True, 'inline_diffs': False},
             'runtime': {'checkpoints_enabled': False},
+            'browser': {'allow_private_urls': True},
+            'terminal': {'timeout': 240},
+            'approvals': {'mode': 'auto'},
+            'memory': {'user_profile_enabled': False},
+            'security': {'redact_secrets': False},
         },
     )
 
@@ -190,9 +228,20 @@ def test_agent_config_validate_endpoint_reports_change_effects(tmp_path, monkeyp
         'valid': True,
         'errors': [],
         'warnings': [],
-        'changed_keys': ['display.personality', 'runtime.checkpoints_enabled'],
+        'changed_keys': [
+            'display.personality',
+            'display.streaming',
+            'display.show_reasoning',
+            'display.inline_diffs',
+            'runtime.checkpoints_enabled',
+            'browser.allow_private_urls',
+            'terminal.timeout',
+            'approvals.mode',
+            'memory.user_profile_enabled',
+            'security.redact_secrets',
+        ],
         'requires_reload': True,
-        'requires_restart': False,
+        'requires_restart': True,
         'requires_new_session': True,
     }
 
@@ -222,6 +271,63 @@ def test_agent_config_validate_endpoint_rejects_forbidden_fields(tmp_path, monke
     assert payload['requires_restart'] is False
     assert payload['requires_new_session'] is False
     assert payload['errors'] == ['providers.custom.api_key is not editable in config v1.']
+
+
+def test_agent_config_patch_expands_v2_editable_fields(tmp_path, monkeypatch) -> None:
+    from app.services import config_service as config_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    write_config(
+        config_path,
+        {
+            'display': {'personality': 'creative', 'streaming': False, 'show_reasoning': False, 'inline_diffs': True},
+            'runtime': {'checkpoints_enabled': True, 'worktree_enabled': False},
+            'browser': {'allow_private_urls': False},
+            'terminal': {'timeout': 180},
+            'approvals': {'mode': 'manual'},
+            'memory': {'user_profile_enabled': True},
+            'security': {'redact_secrets': True},
+            'providers': {'custom': {'api_key': 'super-secret'}},
+        },
+    )
+
+    monkeypatch.setattr(config_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.patch(
+        '/api/agents/default/config',
+        json={
+            'display': {'streaming': True, 'show_reasoning': True, 'inline_diffs': False},
+            'browser': {'allow_private_urls': True},
+            'terminal': {'timeout': 240},
+            'approvals': {'mode': 'auto'},
+            'memory': {'user_profile_enabled': False},
+            'security': {'redact_secrets': False},
+            'providers': {'custom': {'api_key': 'should-not-overwrite'}},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['effective_config']['display']['streaming'] is True
+    assert payload['effective_config']['display']['show_reasoning'] is True
+    assert payload['effective_config']['display']['inline_diffs'] is False
+    assert payload['effective_config']['browser']['allow_private_urls'] is True
+    assert payload['effective_config']['terminal']['timeout'] == 240
+    assert payload['effective_config']['approvals']['mode'] == 'auto'
+    assert payload['effective_config']['memory']['user_profile_enabled'] is False
+    assert payload['effective_config']['security']['redact_secrets'] == '***redacted***'
+
+    stored = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+    assert stored['display']['streaming'] is True
+    assert stored['display']['show_reasoning'] is True
+    assert stored['display']['inline_diffs'] is False
+    assert stored['browser']['allow_private_urls'] is True
+    assert stored['terminal']['timeout'] == 240
+    assert stored['approvals']['mode'] == 'auto'
+    assert stored['memory']['user_profile_enabled'] is False
+    assert stored['security']['redact_secrets'] is False
+    assert stored['providers']['custom']['api_key'] == 'super-secret'
 
 
 def test_system_env_catalog_endpoint_returns_grouped_known_keys() -> None:

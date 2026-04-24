@@ -19,15 +19,23 @@ from app.utils import load_yaml_file, redact_secrets
 
 EDITABLE_FIELDS = [
     'display.personality',
+    'display.streaming',
+    'display.show_reasoning',
+    'display.inline_diffs',
     'model.default',
     'model.provider',
     'runtime.checkpoints_enabled',
     'runtime.worktree_enabled',
+    'browser.allow_private_urls',
+    'terminal.timeout',
+    'approvals.mode',
+    'memory.user_profile_enabled',
+    'security.redact_secrets',
 ]
 DEFERRED_FIELDS = ['providers', 'fallback_providers']
 WRITE_RESTRICTIONS = [
-    'Provider credentials and fallback chains remain read-only in Config v1.',
-    'Only display.personality, model.default/provider, and runtime toggles are writable in this slice.',
+    'Provider credentials and fallback chains remain read-only in Config v2.',
+    'Credential-bearing provider settings stay deferred to the Env/API Keys surface.',
 ]
 
 SCHEMA_SECTIONS = [
@@ -65,6 +73,30 @@ SCHEMA_SECTIONS = [
                 'status': 'editable',
                 'impact': 'new_session',
             },
+            {
+                'key': 'display.streaming',
+                'label': 'Streaming output',
+                'description': 'Render streaming response output in the UI when supported.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'reload',
+            },
+            {
+                'key': 'display.show_reasoning',
+                'label': 'Show reasoning',
+                'description': 'Expose reasoning traces when the runtime/config permits it.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'reload',
+            },
+            {
+                'key': 'display.inline_diffs',
+                'label': 'Inline diffs',
+                'description': 'Display code and file diffs inline in the dashboard experience.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'reload',
+            },
         ],
     },
     {
@@ -86,6 +118,77 @@ SCHEMA_SECTIONS = [
                 'type': 'boolean',
                 'status': 'editable',
                 'impact': 'reload',
+            },
+        ],
+    },
+    {
+        'key': 'browser',
+        'label': 'Browser',
+        'fields': [
+            {
+                'key': 'browser.allow_private_urls',
+                'label': 'Allow private URLs',
+                'description': 'Permit browser tooling to access private-network URLs.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'restart',
+            },
+        ],
+    },
+    {
+        'key': 'terminal',
+        'label': 'Terminal',
+        'fields': [
+            {
+                'key': 'terminal.timeout',
+                'label': 'Terminal timeout',
+                'description': 'Default timeout in seconds for terminal commands.',
+                'type': 'number',
+                'status': 'editable',
+                'impact': 'restart',
+            },
+        ],
+    },
+    {
+        'key': 'approvals',
+        'label': 'Approvals',
+        'fields': [
+            {
+                'key': 'approvals.mode',
+                'label': 'Approval mode',
+                'description': 'Control how dangerous actions are approved.',
+                'type': 'string',
+                'status': 'editable',
+                'impact': 'restart',
+                'options': ['manual', 'auto', 'yolo'],
+            },
+        ],
+    },
+    {
+        'key': 'memory',
+        'label': 'Memory',
+        'fields': [
+            {
+                'key': 'memory.user_profile_enabled',
+                'label': 'User profile memory',
+                'description': 'Persist durable user profile facts across sessions.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'restart',
+            },
+        ],
+    },
+    {
+        'key': 'security',
+        'label': 'Security',
+        'fields': [
+            {
+                'key': 'security.redact_secrets',
+                'label': 'Redact secrets',
+                'description': 'Mask secrets in UI payloads and logs.',
+                'type': 'boolean',
+                'status': 'editable',
+                'impact': 'restart',
             },
         ],
     },
@@ -172,9 +275,13 @@ class ConfigService:
 
         if isinstance(payload.get('display'), dict):
             config.setdefault('display', {})
-            personality = payload['display'].get('personality')
-            if personality is not None:
-                config['display']['personality'] = personality
+            for key in ['personality', 'streaming', 'show_reasoning', 'inline_diffs']:
+                if key in payload['display']:
+                    value = payload['display'][key]
+                    if key == 'personality':
+                        config['display'][key] = value
+                    else:
+                        config['display'][key] = bool(value)
 
         if isinstance(payload.get('model'), dict):
             config.setdefault('model', {})
@@ -187,6 +294,31 @@ class ConfigService:
             for key in ['checkpoints_enabled', 'worktree_enabled']:
                 if key in payload['runtime']:
                     config['runtime'][key] = bool(payload['runtime'][key])
+
+        if isinstance(payload.get('browser'), dict):
+            config.setdefault('browser', {})
+            if 'allow_private_urls' in payload['browser']:
+                config['browser']['allow_private_urls'] = bool(payload['browser']['allow_private_urls'])
+
+        if isinstance(payload.get('terminal'), dict):
+            config.setdefault('terminal', {})
+            if payload['terminal'].get('timeout') is not None:
+                config['terminal']['timeout'] = int(payload['terminal']['timeout'])
+
+        if isinstance(payload.get('approvals'), dict):
+            config.setdefault('approvals', {})
+            if payload['approvals'].get('mode') is not None:
+                config['approvals']['mode'] = payload['approvals']['mode']
+
+        if isinstance(payload.get('memory'), dict):
+            config.setdefault('memory', {})
+            if 'user_profile_enabled' in payload['memory']:
+                config['memory']['user_profile_enabled'] = bool(payload['memory']['user_profile_enabled'])
+
+        if isinstance(payload.get('security'), dict):
+            config.setdefault('security', {})
+            if 'redact_secrets' in payload['security']:
+                config['security']['redact_secrets'] = bool(payload['security']['redact_secrets'])
 
         config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding='utf-8')
         return self._response(agent_id, config_path, config)

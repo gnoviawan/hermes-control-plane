@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Col, Input, List, Row, Select, Space, Switch, Tag, Typography } from 'antd'
+import { Alert, Button, Card, Col, Input, InputNumber, List, Row, Select, Space, Switch, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
@@ -18,6 +18,19 @@ const statusColorMap: Record<AgentConfigFieldRecord['status'], string> = {
   deferred: 'gold',
   forbidden: 'red',
 }
+
+const numericFieldKeys = ['terminal.timeout']
+const booleanFieldKeys = [
+  'display.streaming',
+  'display.show_reasoning',
+  'display.inline_diffs',
+  'runtime.checkpoints_enabled',
+  'runtime.worktree_enabled',
+  'browser.allow_private_urls',
+  'memory.user_profile_enabled',
+  'security.redact_secrets',
+]
+const selectFieldKeys = ['approvals.mode']
 
 const setNestedValue = (target: Record<string, unknown>, dottedKey: string, value: unknown) => {
   const parts = dottedKey.split('.')
@@ -184,11 +197,22 @@ export function ConfigPage() {
     const disabled = field.status !== 'editable'
     const currentValue = getFieldValue(field)
 
-    if (field.type === 'boolean') {
+    if (field.type === 'boolean' || booleanFieldKeys.includes(field.key)) {
       return <Switch checked={Boolean(currentValue)} disabled={disabled || isSubmitting} onChange={(checked) => setFieldValue(field.key, checked)} />
     }
 
-    if (field.options.length > 0) {
+    if (field.type === 'number' || numericFieldKeys.includes(field.key)) {
+      return (
+        <InputNumber
+          value={typeof currentValue === 'number' ? currentValue : Number(currentValue ?? 0)}
+          disabled={disabled || isSubmitting}
+          onChange={(value) => setFieldValue(field.key, Number(value ?? 0))}
+          style={{ width: '100%' }}
+        />
+      )
+    }
+
+    if (field.options.length > 0 || selectFieldKeys.includes(field.key)) {
       return (
         <Select
           value={String(currentValue ?? '')}
