@@ -33,3 +33,19 @@ def test_config_page_includes_validate_preview_and_reload_save_flow() -> None:
     assert 'validateAgentConfig' in config_page
     assert 'patchAgentConfig' in config_page
     assert 'reloadAgentConfig' in config_page
+
+
+def test_config_page_includes_env_and_api_keys_workspace() -> None:
+    config_page = (ROOT / 'web' / 'src' / 'pages' / 'ConfigPage.tsx').read_text(encoding='utf-8')
+    client_source = (ROOT / 'web' / 'src' / 'api' / 'client.ts').read_text(encoding='utf-8')
+
+    assert 'getSystemEnvCatalog' in client_source
+    assert 'getAgentEnv' in client_source
+    assert 'setAgentEnv' in client_source
+    assert 'deleteAgentEnv' in client_source
+
+    assert 'Env & API Keys' in config_page
+    assert 'systemEnvCatalog' in config_page
+    assert 'agentEnvState' in config_page
+    assert 'Save key' in config_page
+    assert 'Delete key' in config_page

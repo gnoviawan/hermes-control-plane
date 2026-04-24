@@ -184,6 +184,43 @@ export interface AgentConfigReloadRecord {
   message: string
 }
 
+export interface EnvVariableRecord {
+  key: string
+  category: string
+  description: string
+  sensitive: boolean
+  docsUrl?: string
+  impact: string
+  isSet: boolean
+  redactedPreview?: string | null
+}
+
+export interface EnvCategoryRecord {
+  key: string
+  label: string
+  variables: EnvVariableRecord[]
+}
+
+export interface SystemEnvCatalogRecord {
+  categories: EnvCategoryRecord[]
+  totalCount: number
+}
+
+export interface AgentEnvRecord {
+  agentId: string
+  path: string
+  variables: EnvVariableRecord[]
+}
+
+export interface AgentEnvMutationRecord {
+  agentId: string
+  path: string
+  key: string
+  isSet: boolean
+  redactedPreview?: string | null
+  message: string
+}
+
 export interface AgentConfigRecord {
   agentId: string
   path: string
