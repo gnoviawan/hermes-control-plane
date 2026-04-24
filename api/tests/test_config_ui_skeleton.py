@@ -49,3 +49,18 @@ def test_config_page_includes_env_and_api_keys_workspace() -> None:
     assert 'agentEnvState' in config_page
     assert 'Save key' in config_page
     assert 'Delete key' in config_page
+
+
+def test_config_page_supports_expanded_v2_field_controls() -> None:
+    config_page = (ROOT / 'web' / 'src' / 'pages' / 'ConfigPage.tsx').read_text(encoding='utf-8')
+
+    assert 'display.streaming' in config_page
+    assert 'display.show_reasoning' in config_page
+    assert 'display.inline_diffs' in config_page
+    assert 'browser.allow_private_urls' in config_page
+    assert 'terminal.timeout' in config_page
+    assert 'approvals.mode' in config_page
+    assert 'memory.user_profile_enabled' in config_page
+    assert 'security.redact_secrets' in config_page
+    assert 'InputNumber' in config_page
+    assert "option, label: option" in config_page
