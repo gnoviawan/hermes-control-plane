@@ -12,6 +12,7 @@ from app.models import (
     AgentConfigPatchRequest,
     AgentConfigReloadResponse,
     AgentConfigResponse,
+    AgentConfigSchemaResponse,
     AgentCronJob,
     AgentCronJobCreateRequest,
     AgentCronJobDeleteResponse,
@@ -633,6 +634,12 @@ def get_agent_logs(
 def get_agent_config(agent_id: str) -> AgentConfigResponse:
     ensure_profile_exists(agent_id)
     return config_service.get_config(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/config/schema', response_model=AgentConfigSchemaResponse, tags=['config'])
+def get_agent_config_schema(agent_id: str) -> AgentConfigSchemaResponse:
+    ensure_profile_exists(agent_id)
+    return config_service.get_schema(agent_id)
 
 
 @app.patch('/api/agents/{agent_id}/config', response_model=AgentConfigResponse, tags=['config'])
