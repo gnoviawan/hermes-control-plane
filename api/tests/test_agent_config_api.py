@@ -153,3 +153,68 @@ def test_agent_config_schema_endpoint_returns_grouped_field_metadata(tmp_path, m
     assert deferred_fields['providers.custom.api_key']['sensitive'] is True
     assert deferred_fields['providers.custom.api_key']['value'] == '***redacted***'
     assert deferred_fields['fallback_providers']['value'] == ['backup-a']
+
+
+def test_agent_config_validate_endpoint_reports_change_effects(tmp_path, monkeypatch) -> None:
+    from app.services import config_service as config_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    write_config(
+        config_path,
+        {
+            'model': {'default': 'gpt-5.4', 'provider': 'custom'},
+            'display': {'personality': 'creative'},
+            'runtime': {'checkpoints_enabled': True, 'worktree_enabled': False},
+        },
+    )
+
+    monkeypatch.setattr(config_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.post(
+        '/api/agents/default/config/validate',
+        json={
+            'display': {'personality': 'focused'},
+            'runtime': {'checkpoints_enabled': False},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload == {
+        'agent_id': 'default',
+        'valid': True,
+        'errors': [],
+        'warnings': [],
+        'changed_keys': ['display.personality', 'runtime.checkpoints_enabled'],
+        'requires_reload': True,
+        'requires_restart': False,
+        'requires_new_session': True,
+    }
+
+
+def test_agent_config_validate_endpoint_rejects_forbidden_fields(tmp_path, monkeypatch) -> None:
+    from app.services import config_service as config_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    write_config(config_path, {'providers': {'custom': {'api_key': 'super-secret'}}})
+
+    monkeypatch.setattr(config_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.post(
+        '/api/agents/default/config/validate',
+        json={
+            'providers': {'custom': {'api_key': 'attempted-overwrite'}},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['agent_id'] == 'default'
+    assert payload['valid'] is False
+    assert payload['changed_keys'] == []
+    assert payload['requires_reload'] is False
+    assert payload['requires_restart'] is False
+    assert payload['requires_new_session'] is False
+    assert payload['errors'] == ['providers.custom.api_key is not editable in config v1.']

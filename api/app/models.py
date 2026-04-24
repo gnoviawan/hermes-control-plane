@@ -399,10 +399,23 @@ class AgentConfigSchemaResponse(BaseModel):
     forbidden_count: int
 
 
+class AgentConfigValidationResponse(BaseModel):
+    agent_id: str
+    valid: bool
+    errors: list[str]
+    warnings: list[str]
+    changed_keys: list[str]
+    requires_reload: bool = False
+    requires_restart: bool = False
+    requires_new_session: bool = False
+
+
 class AgentConfigPatchRequest(BaseModel):
     model: dict[str, Any] | None = None
     display: dict[str, Any] | None = None
     runtime: dict[str, Any] | None = None
+    providers: dict[str, Any] | None = None
+    fallback_providers: list[Any] | None = None
 
 
 class AgentConfigReloadResponse(BaseModel):

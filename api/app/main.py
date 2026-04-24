@@ -13,6 +13,7 @@ from app.models import (
     AgentConfigReloadResponse,
     AgentConfigResponse,
     AgentConfigSchemaResponse,
+    AgentConfigValidationResponse,
     AgentCronJob,
     AgentCronJobCreateRequest,
     AgentCronJobDeleteResponse,
@@ -640,6 +641,12 @@ def get_agent_config(agent_id: str) -> AgentConfigResponse:
 def get_agent_config_schema(agent_id: str) -> AgentConfigSchemaResponse:
     ensure_profile_exists(agent_id)
     return config_service.get_schema(agent_id)
+
+
+@app.post('/api/agents/{agent_id}/config/validate', response_model=AgentConfigValidationResponse, tags=['config'])
+def validate_agent_config(agent_id: str, payload: AgentConfigPatchRequest) -> AgentConfigValidationResponse:
+    ensure_profile_exists(agent_id)
+    return config_service.validate_config(agent_id, payload.model_dump(exclude_none=True))
 
 
 @app.patch('/api/agents/{agent_id}/config', response_model=AgentConfigResponse, tags=['config'])
