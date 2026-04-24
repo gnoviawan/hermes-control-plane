@@ -425,6 +425,34 @@ class AgentConfigReloadResponse(BaseModel):
     message: str
 
 
+class EnvVariableRecord(BaseModel):
+    key: str
+    category: str
+    description: str
+    sensitive: bool
+    docs_url: str | None = None
+    impact: str
+    is_set: bool
+    redacted_preview: str | None = None
+
+
+class EnvCategoryRecord(BaseModel):
+    key: str
+    label: str
+    variables: list[EnvVariableRecord] = Field(default_factory=list)
+
+
+class SystemEnvCatalogResponse(BaseModel):
+    categories: list[EnvCategoryRecord] = Field(default_factory=list)
+    total_count: int
+
+
+class AgentEnvResponse(BaseModel):
+    agent_id: str
+    path: str
+    variables: list[EnvVariableRecord] = Field(default_factory=list)
+
+
 class ProviderCatalogItem(BaseModel):
     name: str
     config: dict[str, Any]

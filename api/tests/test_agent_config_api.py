@@ -14,6 +14,10 @@ def write_config(path: Path, payload: dict) -> None:
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding='utf-8')
 
 
+def write_env(path: Path, payload: dict[str, str]) -> None:
+    path.write_text('\n'.join(f'{key}={value}' for key, value in payload.items()) + '\n', encoding='utf-8')
+
+
 def test_agent_config_endpoint_returns_redacted_effective_config(tmp_path, monkeypatch) -> None:
     from app.services import config_service as config_service_module
 
@@ -218,3 +222,48 @@ def test_agent_config_validate_endpoint_rejects_forbidden_fields(tmp_path, monke
     assert payload['requires_restart'] is False
     assert payload['requires_new_session'] is False
     assert payload['errors'] == ['providers.custom.api_key is not editable in config v1.']
+
+
+def test_system_env_catalog_endpoint_returns_grouped_known_keys() -> None:
+    response = client.get('/api/system/env/catalog')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['total_count'] >= 4
+    categories = {category['key']: category for category in payload['categories']}
+    assert {'providers', 'tool_apis', 'gateway_messaging', 'runtime'} <= categories.keys()
+
+    provider_keys = {record['key']: record for record in categories['providers']['variables']}
+    assert provider_keys['OPENAI_API_KEY']['sensitive'] is True
+    assert provider_keys['OPENAI_API_KEY']['impact'] == 'restart'
+    assert provider_keys['OPENAI_API_KEY']['docs_url']
+
+
+def test_agent_env_endpoint_returns_masked_state(tmp_path, monkeypatch) -> None:
+    from app.services import env_service as env_service_module
+
+    env_path = tmp_path / '.env'
+    write_env(
+        env_path,
+        {
+            'OPENAI_API_KEY': 'sk-live-1234567890',
+            'DISCORD_TOKEN': 'discord-secret-abcdef',
+        },
+    )
+
+    monkeypatch.setattr(env_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.get('/api/agents/default/env')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['agent_id'] == 'default'
+    assert payload['path'] == str(env_path)
+    records = {record['key']: record for record in payload['variables']}
+    assert records['OPENAI_API_KEY']['is_set'] is True
+    assert records['OPENAI_API_KEY']['redacted_preview'].startswith('***')
+    assert records['DISCORD_TOKEN']['is_set'] is True
+    assert records['DISCORD_TOKEN']['redacted_preview'].startswith('***')
+    assert records['ANTHROPIC_API_KEY']['is_set'] is False
+    assert records['ANTHROPIC_API_KEY']['redacted_preview'] is None
