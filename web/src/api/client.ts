@@ -1,5 +1,7 @@
 import {
   mockAgentConfig,
+  mockAgentSecurity,
+  mockApprovals,
   mockCronJobs,
   mockLogs,
   mockModels,
@@ -10,12 +12,16 @@ import {
   mockRuns,
   mockSessions,
   mockSkills,
+  mockSystemAllowlists,
+  mockSystemSecurity,
   mockTools,
   mockToolsets,
 } from './mockData'
 import type {
   AgentConfigRecord,
+  AgentSecurityRecord,
   ApiResult,
+  ApprovalRecord,
   CreateProfilePayload,
   CronJob,
   LogEntry,
@@ -29,6 +35,8 @@ import type {
   SessionRecord,
   Skill,
   SkillBroadcastPayload,
+  SystemAllowlistsRecord,
+  SystemSecurityRecord,
   ToggleSkillPayload,
   ToolRecord,
   ToolsetRecord,
@@ -238,6 +246,46 @@ type BackendToolsResponse = {
     schema_summary: Record<string, unknown>
   }>
   total: number
+}
+
+type BackendApprovalsResponse = {
+  agent_id: string
+  approvals: Array<{
+    id: string
+    agent_id: string
+    run_id?: string | null
+    session_id?: string | null
+    command_or_action: string
+    severity: string
+    reason?: string | null
+    created_at?: string | null
+    expires_at?: string | null
+    state: string
+  }>
+  total: number
+}
+
+type BackendAgentSecurityResponse = {
+  agent_id: string
+  approval_policy: string
+  allow_yolo: boolean
+  dangerous_commands: string[]
+  allowlists: Record<string, unknown>
+  write_restrictions: string[]
+}
+
+type BackendSystemSecurityResponse = {
+  profiles: string[]
+  approval_policies: string[]
+  yolo_enabled_profiles: string[]
+  write_restrictions: string[]
+}
+
+type BackendSystemAllowlistsResponse = {
+  commands: string[]
+  paths: string[]
+  hosts: string[]
+  profiles: string[]
 }
 
 type BackendCreateProfileResponse = {
@@ -454,6 +502,43 @@ const normalizeTools = (payload: BackendToolsResponse): ToolRecord[] =>
     availabilityReason: tool.availability_reason ?? undefined,
     schemaSummary: tool.schema_summary,
   }))
+
+const normalizeApprovals = (payload: BackendApprovalsResponse): ApprovalRecord[] =>
+  payload.approvals.map((approval) => ({
+    id: approval.id,
+    agentId: approval.agent_id,
+    runId: approval.run_id ?? undefined,
+    sessionId: approval.session_id ?? undefined,
+    commandOrAction: approval.command_or_action,
+    severity: approval.severity,
+    reason: approval.reason ?? undefined,
+    createdAt: approval.created_at ?? undefined,
+    expiresAt: approval.expires_at ?? undefined,
+    state: approval.state,
+  }))
+
+const normalizeAgentSecurity = (payload: BackendAgentSecurityResponse): AgentSecurityRecord => ({
+  agentId: payload.agent_id,
+  approvalPolicy: payload.approval_policy,
+  allowYolo: payload.allow_yolo,
+  dangerousCommands: payload.dangerous_commands,
+  allowlists: payload.allowlists,
+  writeRestrictions: payload.write_restrictions,
+})
+
+const normalizeSystemSecurity = (payload: BackendSystemSecurityResponse): SystemSecurityRecord => ({
+  profiles: payload.profiles,
+  approvalPolicies: payload.approval_policies,
+  yoloEnabledProfiles: payload.yolo_enabled_profiles,
+  writeRestrictions: payload.write_restrictions,
+})
+
+const normalizeSystemAllowlists = (payload: BackendSystemAllowlistsResponse): SystemAllowlistsRecord => ({
+  commands: payload.commands,
+  paths: payload.paths,
+  hosts: payload.hosts,
+  profiles: payload.profiles,
+})
 
 async function withFallback<T>(run: () => Promise<T>, fallback: () => T): Promise<ApiResult<T>> {
   try {
@@ -752,4 +837,28 @@ export const apiClient = {
       const payload = await fetchJson<BackendToolsResponse>(`/agents/${encodeURIComponent(profileId)}/tools`)
       return normalizeTools(payload)
     }, () => structuredClone(mockTools)),
+
+  getAgentApprovals: async (profileId: string): Promise<ApiResult<ApprovalRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendApprovalsResponse>(`/agents/${encodeURIComponent(profileId)}/approvals`)
+      return normalizeApprovals(payload)
+    }, () => structuredClone(mockApprovals).filter((approval) => approval.agentId === profileId)),
+
+  getAgentSecurity: async (profileId: string): Promise<ApiResult<AgentSecurityRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentSecurityResponse>(`/agents/${encodeURIComponent(profileId)}/security`)
+      return normalizeAgentSecurity(payload)
+    }, () => ({ ...structuredClone(mockAgentSecurity), agentId: profileId })),
+
+  getSystemSecurity: async (): Promise<ApiResult<SystemSecurityRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemSecurityResponse>('/system/security')
+      return normalizeSystemSecurity(payload)
+    }, () => structuredClone(mockSystemSecurity)),
+
+  getSystemAllowlists: async (): Promise<ApiResult<SystemAllowlistsRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemAllowlistsResponse>('/system/allowlists')
+      return normalizeSystemAllowlists(payload)
+    }, () => structuredClone(mockSystemAllowlists)),
 }

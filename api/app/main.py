@@ -17,9 +17,12 @@ from app.models import (
     AgentRuntimeCollection,
     AgentRuntimeHints,
     AgentRuntimeSummary,
+    AgentSecurityPatchRequest,
+    AgentSecurityResponse,
     AgentsResponse,
     AgentSessionsResponse,
     AgentSummary,
+    ApprovalQueueResponse,
     ConfigSummary,
     CreateProfileRequest,
     HealthResponse,
@@ -37,7 +40,9 @@ from app.models import (
     SkillBroadcastResult,
     SkillsResponse,
     StatusResponse,
+    SystemAllowlistsResponse,
     SystemHealthResponse,
+    SystemSecurityResponse,
     SystemVersionResponse,
     ToolCatalogResponse,
     ToolInfo,
@@ -62,6 +67,7 @@ from app.services.config_service import config_service
 from app.services.provider_service import provider_service
 from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
+from app.services.security_service import security_service
 from app.services.session_service import session_service
 from app.services.tool_service import tool_service
 
@@ -153,6 +159,16 @@ def get_system_toolsets() -> ToolsetResponse:
 @app.get('/api/system/tools', response_model=ToolCatalogResponse, tags=['system'])
 def get_system_tools() -> ToolCatalogResponse:
     return tool_service.list_system_tools()
+
+
+@app.get('/api/system/security', response_model=SystemSecurityResponse, tags=['system'])
+def get_system_security() -> SystemSecurityResponse:
+    return security_service.get_system_security()
+
+
+@app.get('/api/system/allowlists', response_model=SystemAllowlistsResponse, tags=['system'])
+def get_system_allowlists() -> SystemAllowlistsResponse:
+    return security_service.get_system_allowlists()
 
 
 @app.get('/api/status', response_model=StatusResponse, tags=['system'])
@@ -262,6 +278,24 @@ def patch_agent_toolsets(agent_id: str, payload: ToolsetPatchRequest) -> Toolset
 def list_agent_tools(agent_id: str) -> ToolCatalogResponse:
     ensure_profile_exists(agent_id)
     return tool_service.list_agent_tools(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/approvals', response_model=ApprovalQueueResponse, tags=['security'])
+def list_agent_approvals(agent_id: str) -> ApprovalQueueResponse:
+    ensure_profile_exists(agent_id)
+    return security_service.list_approvals(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/security', response_model=AgentSecurityResponse, tags=['security'])
+def get_agent_security(agent_id: str) -> AgentSecurityResponse:
+    ensure_profile_exists(agent_id)
+    return security_service.get_agent_security(agent_id)
+
+
+@app.patch('/api/agents/{agent_id}/security', response_model=AgentSecurityResponse, tags=['security'])
+def patch_agent_security(agent_id: str, payload: AgentSecurityPatchRequest) -> AgentSecurityResponse:
+    ensure_profile_exists(agent_id)
+    return security_service.patch_agent_security(agent_id, payload)
 
 
 @app.get('/api/agents/{agent_id}/sessions/search', response_model=SessionSearchResponse, tags=['sessions'])
