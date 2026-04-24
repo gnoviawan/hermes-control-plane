@@ -5,29 +5,20 @@ const root = process.cwd()
 const manifest = JSON.parse(readFileSync(join(root, 'route-manifest.json'), 'utf8'))
 const appSource = readFileSync(join(root, 'src', 'App.tsx'), 'utf8')
 const layoutSource = readFileSync(join(root, 'src', 'layouts', 'DashboardLayout.tsx'), 'utf8')
+const registrySource = readFileSync(join(root, 'src', 'routeRegistry.tsx'), 'utf8')
 
 const problems = []
 
-for (const route of manifest.routes) {
-  const appToken = `path=\"${route.path}\"`
-  if (!appSource.includes(appToken)) {
-    problems.push(`App.tsx missing route path ${route.path}`)
-  }
+if (!registrySource.includes("from '../route-manifest.json'") && !registrySource.includes('from "../route-manifest.json"')) {
+  problems.push('routeRegistry.tsx missing route-manifest.json import')
+}
 
-  const menuKeyToken = `key: '${route.path}'`
-  if (!layoutSource.includes(menuKeyToken)) {
-    problems.push(`DashboardLayout.tsx missing menu key ${route.path}`)
-  }
+if (!appSource.includes('dashboardRoutes')) {
+  problems.push('App.tsx missing dashboardRoutes registry usage')
+}
 
-  const menuLabelToken = `label: '${route.label}'`
-  if (!layoutSource.includes(menuLabelToken)) {
-    problems.push(`DashboardLayout.tsx missing menu label ${route.label}`)
-  }
-
-  const menuGroupToken = `key: '${route.group}'`
-  if (!layoutSource.includes(menuGroupToken)) {
-    problems.push(`DashboardLayout.tsx missing menu group ${route.group}`)
-  }
+if (!layoutSource.includes('navigationItems')) {
+  problems.push('DashboardLayout.tsx missing navigationItems registry usage')
 }
 
 const summary = {

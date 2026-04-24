@@ -1,56 +1,10 @@
-import {
-  ApiOutlined,
-  ClockCircleOutlined,
-  ConsoleSqlOutlined,
-  DatabaseOutlined,
-  FileTextOutlined,
-  FolderOpenOutlined,
-  MessageOutlined,
-  ProfileOutlined,
-  RadarChartOutlined,
-  SafetyCertificateOutlined,
-  SettingOutlined,
-  SwapOutlined,
-  ToolOutlined,
-} from '@ant-design/icons'
 import { Layout, Menu, Select, Space, Tag, Typography } from 'antd'
-import type { MenuProps } from 'antd'
 import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
+import { navigationItems } from '../routeRegistry'
 import { useProfileStore } from '../store/profileStore'
-
-const navigationItems: MenuProps['items'] = [
-  {
-    key: 'control-group',
-    label: 'Control',
-    children: [
-      { key: '/overview', label: 'Overview' },
-      { key: '/console', icon: <ConsoleSqlOutlined />, label: 'Console' },
-      { key: '/sessions', icon: <RadarChartOutlined />, label: 'Sessions' },
-      { key: '/tools', icon: <ToolOutlined />, label: 'Tools' },
-      { key: '/mcp', icon: <ApiOutlined />, label: 'MCP' },
-      { key: '/memory', icon: <DatabaseOutlined />, label: 'Memory' },
-      { key: '/workspace', icon: <FolderOpenOutlined />, label: 'Workspace' },
-      { key: '/gateway', icon: <MessageOutlined />, label: 'Gateway' },
-      { key: '/security', icon: <SafetyCertificateOutlined />, label: 'Security' },
-      { key: '/cron-jobs', icon: <ClockCircleOutlined />, label: 'Cron Jobs' },
-      { key: '/logs', icon: <FileTextOutlined />, label: 'Logs' },
-    ],
-  },
-  {
-    key: 'settings-group',
-    label: 'Settings',
-    children: [
-      { key: '/profiles', icon: <ProfileOutlined />, label: 'Profiles' },
-      { key: '/plugins', icon: <ApiOutlined />, label: 'Plugins' },
-      { key: '/config', icon: <SettingOutlined />, label: 'Config' },
-      { key: '/providers-models', icon: <SwapOutlined />, label: 'Providers & Models' },
-      { key: '/skills', icon: <ToolOutlined />, label: 'Skills' },
-    ],
-  },
-]
 
 export function DashboardLayout() {
   const navigate = useNavigate()
