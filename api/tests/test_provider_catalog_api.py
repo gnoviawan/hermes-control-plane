@@ -28,7 +28,7 @@ def test_system_providers_and_models_expose_redacted_catalog(tmp_path, monkeypat
             },
             'fallback_providers': ['backup'],
             'models': {
-                'custom': ['gpt-5.4', 'gpt-5-mini'],
+                'custom': ['gpt-5-mini'],
                 'backup': ['glm-5.1'],
             },
         },
@@ -48,6 +48,7 @@ def test_system_providers_and_models_expose_redacted_catalog(tmp_path, monkeypat
     models_payload = models_response.json()
     assert models_payload['default_model'] == 'gpt-5.4'
     assert models_payload['default_provider'] == 'custom'
+    assert {'provider': 'custom', 'id': 'gpt-5.4', 'source': 'config'} in models_payload['models']
     assert models_payload['models'][0]['provider'] == 'backup'
     assert models_payload['models'][0]['id'] == 'glm-5.1'
 
@@ -116,3 +117,32 @@ def test_provider_routing_patch_updates_default_provider_model_and_fallbacks(tmp
     assert stored['model']['default'] == 'glm-5.1'
     assert stored['fallback_providers'] == ['custom']
     assert stored['providers']['custom']['api_key'] == 'super-secret'
+
+
+def test_provider_routing_patch_recovers_from_non_dict_model_shape(tmp_path, monkeypatch) -> None:
+    from app.services import provider_service as provider_service_module
+
+    config_path = tmp_path / 'config.yaml'
+    write_config(
+        config_path,
+        {
+            'model': 'broken',
+            'providers': {'custom': {'api_key': 'super-secret'}},
+            'fallback_providers': ['backup'],
+        },
+    )
+
+    monkeypatch.setattr(provider_service_module, 'ensure_profile_exists', lambda profile='default': SimpleNamespace(home=tmp_path))
+
+    response = client.patch(
+        '/api/system/provider-routing',
+        json={
+            'default_provider': 'custom',
+            'default_model': 'gpt-5.4',
+            'fallback_providers': ['backup'],
+        },
+    )
+
+    assert response.status_code == 200
+    stored = yaml.safe_load(config_path.read_text(encoding='utf-8'))
+    assert stored['model'] == {'provider': 'custom', 'default': 'gpt-5.4'}
