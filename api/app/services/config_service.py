@@ -9,6 +9,7 @@ from app.models import (
     AgentConfigReloadResponse,
     AgentConfigResponse,
     AgentConfigSchemaResponse,
+    AgentConfigValidationResponse,
     ConfigFieldDescriptor,
     ConfigSectionDescriptor,
     RuntimeToggles,
@@ -145,6 +146,25 @@ class ConfigService:
             + sum(1 for field in deferred_fields if field.status == 'forbidden'),
         )
 
+    def validate_config(self, agent_id: str, payload: dict[str, Any]) -> AgentConfigValidationResponse:
+        ensure_profile_exists(agent_id)
+
+        changed_keys = self._flatten_payload(payload)
+        errors = [f'{key} is not editable in config v1.' for key in changed_keys if key not in EDITABLE_FIELDS]
+        allowed_keys = [key for key in changed_keys if key in EDITABLE_FIELDS]
+        impacts = [self._impact_for_key(key) for key in allowed_keys]
+
+        return AgentConfigValidationResponse(
+            agent_id=agent_id,
+            valid=not errors,
+            errors=errors,
+            warnings=[],
+            changed_keys=allowed_keys if not errors else [],
+            requires_reload=not errors and any(impact == 'reload' for impact in impacts),
+            requires_restart=not errors and any(impact == 'restart' for impact in impacts),
+            requires_new_session=not errors and any(impact == 'new_session' for impact in impacts),
+        )
+
     def patch_config(self, agent_id: str, payload: dict[str, Any]) -> AgentConfigResponse:
         context = ensure_profile_exists(agent_id)
         config_path = context.home / 'config.yaml'
@@ -220,6 +240,26 @@ class ConfigService:
                 return None
             current = current[part]
         return current
+
+    def _flatten_payload(self, payload: dict[str, Any], prefix: str = '') -> list[str]:
+        changed_keys: list[str] = []
+        for key, value in payload.items():
+            dotted = f'{prefix}.{key}' if prefix else key
+            if isinstance(value, dict):
+                changed_keys.extend(self._flatten_payload(value, dotted))
+            else:
+                changed_keys.append(dotted)
+        return changed_keys
+
+    def _impact_for_key(self, key: str) -> str:
+        for section in SCHEMA_SECTIONS:
+            for field in section['fields']:
+                if field['key'] == key:
+                    return field['impact']
+        for field in DEFERRED_SCHEMA_FIELDS:
+            if field['key'] == key:
+                return field['impact']
+        return 'new_session'
 
 
 config_service = ConfigService()
