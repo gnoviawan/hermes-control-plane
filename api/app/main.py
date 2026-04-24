@@ -42,6 +42,8 @@ from app.models import (
     ConfigSummary,
     CreateProfileRequest,
     HealthResponse,
+    GatewayLifecycleResponse,
+    GatewayPlatformInfo,
     LogEntry,
     McpReloadResponse,
     McpServerInfo,
@@ -64,6 +66,9 @@ from app.models import (
     SkillsResponse,
     StatusResponse,
     SystemAllowlistsResponse,
+    SystemGatewayPatchRequest,
+    SystemGatewayPlatformsResponse,
+    SystemGatewayResponse,
     SystemHealthResponse,
     SystemMcpServersResponse,
     SystemMemorySummaryResponse,
@@ -92,6 +97,7 @@ from app.services.hermes_adapter import (
 )
 from app.services.config_service import config_service
 from app.services.cron_service import cron_service
+from app.services.gateway_service import gateway_service
 from app.services.mcp_service import mcp_service
 from app.services.memory_service import memory_service
 from app.services.provider_service import provider_service
@@ -201,6 +207,31 @@ def get_system_mcp_servers() -> SystemMcpServersResponse:
 @app.get('/api/system/memory', response_model=SystemMemorySummaryResponse, tags=['memory'])
 def get_system_memory_summary() -> SystemMemorySummaryResponse:
     return memory_service.system_summary()
+
+
+@app.get('/api/system/gateway', response_model=SystemGatewayResponse, tags=['gateway'])
+def get_system_gateway() -> SystemGatewayResponse:
+    return gateway_service.get_gateway()
+
+
+@app.patch('/api/system/gateway', response_model=SystemGatewayResponse, tags=['gateway'])
+def patch_system_gateway(payload: SystemGatewayPatchRequest) -> SystemGatewayResponse:
+    return gateway_service.patch_gateway(payload)
+
+
+@app.get('/api/system/gateway/platforms', response_model=SystemGatewayPlatformsResponse, tags=['gateway'])
+def get_system_gateway_platforms() -> SystemGatewayPlatformsResponse:
+    return gateway_service.list_platforms()
+
+
+@app.post('/api/system/gateway/start', response_model=GatewayLifecycleResponse, tags=['gateway'])
+def start_system_gateway() -> GatewayLifecycleResponse:
+    return gateway_service.start_gateway()
+
+
+@app.post('/api/system/gateway/stop', response_model=GatewayLifecycleResponse, tags=['gateway'])
+def stop_system_gateway() -> GatewayLifecycleResponse:
+    return gateway_service.stop_gateway()
 
 
 @app.get('/api/system/security', response_model=SystemSecurityResponse, tags=['system'])

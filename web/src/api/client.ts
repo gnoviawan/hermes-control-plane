@@ -4,6 +4,7 @@ import {
   mockApprovals,
   mockCheckpoints,
   mockCronJobs,
+  mockGatewayPlatforms,
   mockLogs,
   mockMcpServers,
   mockMemoryEntries,
@@ -17,6 +18,7 @@ import {
   mockSessions,
   mockSkills,
   mockSystemAllowlists,
+  mockSystemGateway,
   mockSystemMemoryProfiles,
   mockSystemSecurity,
   mockSystemSkillLibrary,
@@ -34,6 +36,8 @@ import type {
   CheckpointRecord,
   CreateProfilePayload,
   CronJob,
+  GatewayLifecycleRecord,
+  GatewayPlatformRecord,
   LogEntry,
   McpServerRecord,
   MemoryEntryRecord,
@@ -49,6 +53,7 @@ import type {
   Skill,
   SkillBroadcastPayload,
   SystemAllowlistsRecord,
+  SystemGatewayRecord,
   SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
@@ -72,6 +77,7 @@ const cloneMemoryProviders = () => structuredClone(mockMemoryProviders)
 const cloneWorkspaceTree = () => structuredClone(mockWorkspaceTree)
 const cloneWorkspaceArtifacts = () => structuredClone(mockWorkspaceArtifacts)
 const cloneCheckpoints = () => structuredClone(mockCheckpoints)
+const cloneGatewayPlatforms = () => structuredClone(mockGatewayPlatforms)
 
 type BackendProfile = {
   name: string
@@ -379,6 +385,40 @@ type BackendCheckpointsResponse = {
     status: string
   }>
   total: number
+}
+
+type BackendGatewayResponse = {
+  enabled: boolean
+  status: string
+  default_platform?: string | null
+  platform_count: number
+  channel_count: number
+  platforms: Array<{
+    name: string
+    enabled: boolean
+    status: string
+    channel_count: number
+    config: Record<string, unknown>
+  }>
+  write_restrictions: string[]
+}
+
+type BackendGatewayPlatformsResponse = {
+  platforms: Array<{
+    name: string
+    enabled: boolean
+    status: string
+    channel_count: number
+    config: Record<string, unknown>
+  }>
+  total: number
+}
+
+type BackendGatewayLifecycleResponse = {
+  status: string
+  started: boolean
+  stopped: boolean
+  message: string
 }
 
 type BackendApprovalsResponse = {
@@ -718,6 +758,34 @@ const normalizeCheckpoints = (payload: BackendCheckpointsResponse): CheckpointRe
     path: checkpoint.path,
     status: checkpoint.status,
   }))
+
+const normalizeGatewayPlatforms = (
+  payload: BackendGatewayResponse | BackendGatewayPlatformsResponse,
+): GatewayPlatformRecord[] =>
+  payload.platforms.map((platform) => ({
+    name: platform.name,
+    enabled: platform.enabled,
+    status: platform.status,
+    channelCount: platform.channel_count,
+    config: platform.config,
+  }))
+
+const normalizeSystemGateway = (payload: BackendGatewayResponse): SystemGatewayRecord => ({
+  enabled: payload.enabled,
+  status: payload.status,
+  defaultPlatform: payload.default_platform ?? undefined,
+  platformCount: payload.platform_count,
+  channelCount: payload.channel_count,
+  platforms: normalizeGatewayPlatforms(payload),
+  writeRestrictions: payload.write_restrictions,
+})
+
+const normalizeGatewayLifecycle = (payload: BackendGatewayLifecycleResponse): GatewayLifecycleRecord => ({
+  status: payload.status,
+  started: payload.started,
+  stopped: payload.stopped,
+  message: payload.message,
+})
 
 const normalizeApprovals = (payload: BackendApprovalsResponse): ApprovalRecord[] =>
   payload.approvals.map((approval) => ({
@@ -1195,6 +1263,52 @@ export const apiClient = {
       })
       return { restored: payload.restored, message: payload.message }
     }, () => ({ restored: true, message: `Restored checkpoint ${checkpointId} for ${profileId}.` })),
+
+  getSystemGateway: async (): Promise<ApiResult<SystemGatewayRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendGatewayResponse>('/system/gateway')
+      return normalizeSystemGateway(payload)
+    }, () => structuredClone(mockSystemGateway)),
+
+  patchSystemGateway: async (payload: {
+    enabled?: boolean
+    defaultPlatform?: string
+    platforms?: Record<string, { enabled: boolean; channels: string[] }>
+  }): Promise<ApiResult<SystemGatewayRecord>> =>
+    withFallback(async () => {
+      const result = await fetchJson<BackendGatewayResponse>('/system/gateway', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          enabled: payload.enabled,
+          default_platform: payload.defaultPlatform,
+          platforms: payload.platforms,
+        }),
+      })
+      return normalizeSystemGateway(result)
+    }, () => ({
+      ...structuredClone(mockSystemGateway),
+      enabled: payload.enabled ?? mockSystemGateway.enabled,
+      defaultPlatform: payload.defaultPlatform ?? mockSystemGateway.defaultPlatform,
+    })),
+
+  getSystemGatewayPlatforms: async (): Promise<ApiResult<GatewayPlatformRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendGatewayPlatformsResponse>('/system/gateway/platforms')
+      return normalizeGatewayPlatforms(payload)
+    }, cloneGatewayPlatforms),
+
+  setSystemGatewayLifecycle: async (action: 'start' | 'stop'): Promise<ApiResult<GatewayLifecycleRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendGatewayLifecycleResponse>(`/system/gateway/${action}`, {
+        method: 'POST',
+      })
+      return normalizeGatewayLifecycle(payload)
+    }, () => ({
+      status: action === 'start' ? 'running' : 'stopped',
+      started: action === 'start',
+      stopped: action === 'stop',
+      message: `Gateway ${action} requested.`,
+    })),
 
   getAgentApprovals: async (profileId: string): Promise<ApiResult<ApprovalRecord[]>> =>
     withFallback(async () => {

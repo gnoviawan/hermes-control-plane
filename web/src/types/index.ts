@@ -243,6 +243,31 @@ export interface CheckpointRecord {
   status: string
 }
 
+export interface GatewayPlatformRecord {
+  name: string
+  enabled: boolean
+  status: string
+  channelCount: number
+  config: Record<string, unknown>
+}
+
+export interface SystemGatewayRecord {
+  enabled: boolean
+  status: string
+  defaultPlatform?: string
+  platformCount: number
+  channelCount: number
+  platforms: GatewayPlatformRecord[]
+  writeRestrictions: string[]
+}
+
+export interface GatewayLifecycleRecord {
+  status: string
+  started: boolean
+  stopped: boolean
+  message: string
+}
+
 export interface ApprovalRecord {
   id: string
   agentId: string

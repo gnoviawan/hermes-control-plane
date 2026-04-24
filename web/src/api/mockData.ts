@@ -4,6 +4,7 @@ import type {
   ApprovalRecord,
   CheckpointRecord,
   CronJob,
+  GatewayPlatformRecord,
   LogEntry,
   McpServerRecord,
   MemoryEntryRecord,
@@ -17,6 +18,7 @@ import type {
   SessionRecord,
   Skill,
   SystemAllowlistsRecord,
+  SystemGatewayRecord,
   SystemMemoryProfileRecord,
   SystemSecurityRecord,
   SystemSkillLibraryRecord,
@@ -455,6 +457,41 @@ export const mockCheckpoints: CheckpointRecord[] = [
   { id: 'checkpoint-alpha', path: '/opt/data/workspace/checkpoints/checkpoint-alpha', status: 'available' },
   { id: 'checkpoint-beta', path: '/opt/data/workspace/checkpoints/checkpoint-beta', status: 'available' },
 ]
+
+export const mockGatewayPlatforms: GatewayPlatformRecord[] = [
+  {
+    name: 'discord',
+    enabled: true,
+    status: 'running',
+    channelCount: 2,
+    config: {
+      channels: ['1496901287827214508', '1468181721357877248'],
+      token: '***redacted***',
+    },
+  },
+  {
+    name: 'telegram',
+    enabled: false,
+    status: 'disabled',
+    channelCount: 1,
+    config: {
+      channels: ['-1001234567890'],
+    },
+  },
+]
+
+export const mockSystemGateway: SystemGatewayRecord = {
+  enabled: true,
+  status: 'running',
+  defaultPlatform: 'discord',
+  platformCount: mockGatewayPlatforms.length,
+  channelCount: mockGatewayPlatforms.reduce((sum, platform) => sum + platform.channelCount, 0),
+  platforms: mockGatewayPlatforms,
+  writeRestrictions: [
+    'Gateway secrets remain redacted in dashboard responses.',
+    'Gateway v1 updates only the top-level gateway block and lifecycle state file.',
+  ],
+}
 
 export const mockApprovals: ApprovalRecord[] = [
   {
