@@ -3,6 +3,7 @@ import { DashboardLayout } from './layouts/DashboardLayout'
 import { ConfigPage } from './pages/ConfigPage'
 import { ConsolePage } from './pages/ConsolePage'
 import { CronJobsPage } from './pages/CronJobsPage'
+import { GatewayPage } from './pages/GatewayPage'
 import { LogsPage } from './pages/LogsPage'
 import { McpPage } from './pages/McpPage'
 import { MemoryPage } from './pages/MemoryPage'
@@ -28,6 +29,7 @@ function App() {
         <Route path="/mcp" element={<McpPage />} />
         <Route path="/memory" element={<MemoryPage />} />
         <Route path="/workspace" element={<WorkspacePage />} />
+        <Route path="/gateway" element={<GatewayPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/sessions" element={<SessionsPage />} />
         <Route path="/config" element={<ConfigPage />} />

@@ -619,6 +619,42 @@ class AgentCronJobDeleteResponse(BaseModel):
     id: str
 
 
+class GatewayPlatformInfo(BaseModel):
+    name: str
+    enabled: bool = True
+    status: str = 'configured'
+    channel_count: int = 0
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class SystemGatewayResponse(BaseModel):
+    enabled: bool
+    status: str
+    default_platform: str | None = None
+    platform_count: int = 0
+    channel_count: int = 0
+    platforms: list[GatewayPlatformInfo] = Field(default_factory=list)
+    write_restrictions: list[str] = Field(default_factory=list)
+
+
+class SystemGatewayPlatformsResponse(BaseModel):
+    platforms: list[GatewayPlatformInfo] = Field(default_factory=list)
+    total: int = 0
+
+
+class SystemGatewayPatchRequest(BaseModel):
+    enabled: bool | None = None
+    default_platform: str | None = None
+    platforms: dict[str, dict[str, Any]] | None = None
+
+
+class GatewayLifecycleResponse(BaseModel):
+    status: str
+    started: bool = False
+    stopped: bool = False
+    message: str
+
+
 class StatusResponse(BaseModel):
     ok: bool
     active_profile: str
