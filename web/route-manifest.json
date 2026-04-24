@@ -1,0 +1,100 @@
+{
+  "routes": [
+    {
+      "key": "overview",
+      "path": "/overview",
+      "label": "Overview",
+      "group": "control-group"
+    },
+    {
+      "key": "console",
+      "path": "/console",
+      "label": "Console",
+      "group": "control-group"
+    },
+    {
+      "key": "sessions",
+      "path": "/sessions",
+      "label": "Sessions",
+      "group": "control-group"
+    },
+    {
+      "key": "tools",
+      "path": "/tools",
+      "label": "Tools",
+      "group": "control-group"
+    },
+    {
+      "key": "mcp",
+      "path": "/mcp",
+      "label": "MCP",
+      "group": "control-group"
+    },
+    {
+      "key": "memory",
+      "path": "/memory",
+      "label": "Memory",
+      "group": "control-group"
+    },
+    {
+      "key": "workspace",
+      "path": "/workspace",
+      "label": "Workspace",
+      "group": "control-group"
+    },
+    {
+      "key": "gateway",
+      "path": "/gateway",
+      "label": "Gateway",
+      "group": "control-group"
+    },
+    {
+      "key": "security",
+      "path": "/security",
+      "label": "Security",
+      "group": "control-group"
+    },
+    {
+      "key": "cron-jobs",
+      "path": "/cron-jobs",
+      "label": "Cron Jobs",
+      "group": "control-group"
+    },
+    {
+      "key": "logs",
+      "path": "/logs",
+      "label": "Logs",
+      "group": "control-group"
+    },
+    {
+      "key": "profiles",
+      "path": "/profiles",
+      "label": "Profiles",
+      "group": "settings-group"
+    },
+    {
+      "key": "plugins",
+      "path": "/plugins",
+      "label": "Plugins",
+      "group": "settings-group"
+    },
+    {
+      "key": "config",
+      "path": "/config",
+      "label": "Config",
+      "group": "settings-group"
+    },
+    {
+      "key": "providers-models",
+      "path": "/providers-models",
+      "label": "Providers & Models",
+      "group": "settings-group"
+    },
+    {
+      "key": "skills",
+      "path": "/skills",
+      "label": "Skills",
+      "group": "settings-group"
+    }
+  ]
+}
