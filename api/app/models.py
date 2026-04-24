@@ -200,6 +200,49 @@ class SkillsResponse(BaseModel):
     skills: list[SkillSummary]
 
 
+class AgentSkill(BaseModel):
+    name: str
+    category: str | None = None
+    description: str | None = None
+    source: str | None = None
+    installed: bool = True
+    enabled: bool = True
+    updated_at: str | None = None
+
+
+class AgentSkillsResponse(BaseModel):
+    agent_id: str
+    skills: list[AgentSkill]
+    total: int
+
+
+class AgentSkillPatchRequest(BaseModel):
+    enabled: bool | None = None
+
+
+class AgentSkillRunResponse(BaseModel):
+    agent_id: str
+    skill_name: str
+    status: str
+    requested_at: str
+    message: str
+
+
+class SystemSkillLibraryItem(BaseModel):
+    name: str
+    category: str | None = None
+    description: str | None = None
+    source: str | None = None
+    installed_profiles: list[str] = Field(default_factory=list)
+    profile_count: int
+    updated_at: str | None = None
+
+
+class SystemSkillsLibraryResponse(BaseModel):
+    skills: list[SystemSkillLibraryItem]
+    total: int
+
+
 class SkillBroadcastRequest(BaseModel):
     source_profile: str = Field(..., description="Profile to copy from")
     target_profiles: list[str] = Field(..., min_length=1)

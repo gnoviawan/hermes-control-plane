@@ -25,6 +25,10 @@ from app.models import (
     AgentSecurityPatchRequest,
     AgentSecurityResponse,
     AgentsResponse,
+    AgentSkill,
+    AgentSkillPatchRequest,
+    AgentSkillRunResponse,
+    AgentSkillsResponse,
     AgentSessionsResponse,
     AgentSummary,
     ApprovalQueueResponse,
@@ -48,6 +52,7 @@ from app.models import (
     SystemAllowlistsResponse,
     SystemHealthResponse,
     SystemSecurityResponse,
+    SystemSkillsLibraryResponse,
     SystemVersionResponse,
     ToolCatalogResponse,
     ToolInfo,
@@ -75,6 +80,7 @@ from app.services.run_service import run_service
 from app.services.runtime_registry import runtime_registry
 from app.services.security_service import security_service
 from app.services.session_service import session_service
+from app.services.skill_service import skill_service
 from app.services.tool_service import tool_service
 
 app = FastAPI(title=settings.app_name, version=settings.app_version)
@@ -326,6 +332,40 @@ def get_agent_session(agent_id: str, session_id: str) -> SessionDetail:
 def get_skills(profile: str = Query('default')) -> SkillsResponse:
     skills = list_skills(profile)
     return SkillsResponse(profile=profile, total=len(skills), skills=skills)
+
+
+@app.get('/api/agents/{agent_id}/skills', response_model=AgentSkillsResponse, tags=['skills'])
+def list_agent_skills(agent_id: str) -> AgentSkillsResponse:
+    ensure_profile_exists(agent_id)
+    return skill_service.list_agent_skills(agent_id)
+
+
+@app.get('/api/agents/{agent_id}/skills/{skill_name}', response_model=AgentSkill, tags=['skills'])
+def get_agent_skill(agent_id: str, skill_name: str) -> AgentSkill:
+    ensure_profile_exists(agent_id)
+    return skill_service.get_agent_skill(agent_id, skill_name)
+
+
+@app.patch('/api/agents/{agent_id}/skills/{skill_name}', response_model=AgentSkill, tags=['skills'])
+def patch_agent_skill(agent_id: str, skill_name: str, payload: AgentSkillPatchRequest) -> AgentSkill:
+    ensure_profile_exists(agent_id)
+    return skill_service.patch_agent_skill(agent_id, skill_name, payload)
+
+
+@app.post('/api/agents/{agent_id}/skills/{skill_name}/run', response_model=AgentSkillRunResponse, tags=['skills'])
+def run_agent_skill(agent_id: str, skill_name: str) -> AgentSkillRunResponse:
+    ensure_profile_exists(agent_id)
+    return skill_service.run_agent_skill(agent_id, skill_name)
+
+
+@app.get('/api/system/skills', response_model=SystemSkillsLibraryResponse, tags=['skills'])
+def get_system_skills() -> SystemSkillsLibraryResponse:
+    return skill_service.list_system_library()
+
+
+@app.get('/api/system/skills/catalog', response_model=SystemSkillsLibraryResponse, tags=['skills'])
+def get_system_skills_catalog() -> SystemSkillsLibraryResponse:
+    return skill_service.list_system_library()
 
 
 @app.post('/api/skills/broadcast', response_model=SkillBroadcastResult, tags=['skills'])

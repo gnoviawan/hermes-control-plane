@@ -14,6 +14,7 @@ import type {
   Skill,
   SystemAllowlistsRecord,
   SystemSecurityRecord,
+  SystemSkillLibraryRecord,
   ToolRecord,
   ToolsetRecord,
 } from '../types'
@@ -104,7 +105,11 @@ export const mockSkills: Skill[] = [
     name: 'Incident Escalation',
     description: 'Coordinate escalation paths and postmortem capture.',
     category: 'Operations',
+    source: 'filesystem',
+    installed: true,
+    enabled: true,
     enabledProfiles: ['default', 'ops'],
+    installedProfiles: ['default', 'ops'],
     updatedAt: '2026-04-23T07:10:00Z',
   },
   {
@@ -112,7 +117,11 @@ export const mockSkills: Skill[] = [
     name: 'Release Ops',
     description: 'Automate release train checks and rollback prompts.',
     category: 'Delivery',
+    source: 'filesystem',
+    installed: true,
+    enabled: true,
     enabledProfiles: ['default'],
+    installedProfiles: ['default'],
     updatedAt: '2026-04-23T06:40:00Z',
   },
   {
@@ -120,7 +129,11 @@ export const mockSkills: Skill[] = [
     name: 'Knowledge Scout',
     description: 'Summarize changed docs and sync context packs.',
     category: 'Research',
+    source: 'filesystem',
+    installed: true,
+    enabled: true,
     enabledProfiles: ['default', 'sandbox'],
+    installedProfiles: ['default', 'sandbox'],
     updatedAt: '2026-04-22T22:10:00Z',
   },
   {
@@ -128,10 +141,24 @@ export const mockSkills: Skill[] = [
     name: 'Session Curator',
     description: 'Archive stale sessions and annotate failures.',
     category: 'Maintenance',
+    source: 'filesystem',
+    installed: true,
+    enabled: true,
     enabledProfiles: ['ops', 'sandbox'],
+    installedProfiles: ['ops', 'sandbox'],
     updatedAt: '2026-04-22T20:00:00Z',
   },
 ]
+
+export const mockSystemSkillLibrary: SystemSkillLibraryRecord[] = mockSkills.map((skill) => ({
+  name: skill.id,
+  category: skill.category,
+  description: skill.description,
+  source: skill.source,
+  installedProfiles: skill.installedProfiles,
+  profileCount: skill.installedProfiles.length,
+  updatedAt: skill.updatedAt,
+}))
 
 export const mockSessions: SessionRecord[] = [
   {

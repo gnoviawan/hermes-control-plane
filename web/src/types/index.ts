@@ -52,8 +52,22 @@ export interface Skill {
   name: string
   description: string
   category: string
+  source?: string
+  installed: boolean
+  enabled: boolean
   enabledProfiles: string[]
+  installedProfiles: string[]
   updatedAt: string
+}
+
+export interface SystemSkillLibraryRecord {
+  name: string
+  category: string
+  description: string
+  source?: string
+  installedProfiles: string[]
+  profileCount: number
+  updatedAt?: string
 }
 
 export interface ToggleSkillPayload {
