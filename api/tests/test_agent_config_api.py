@@ -267,3 +267,54 @@ def test_agent_env_endpoint_returns_masked_state(tmp_path, monkeypatch) -> None:
     assert records['DISCORD_TOKEN']['redacted_preview'].startswith('***')
     assert records['ANTHROPIC_API_KEY']['is_set'] is False
     assert records['ANTHROPIC_API_KEY']['redacted_preview'] is None
+
+
+def test_agent_env_put_endpoint_sets_single_key(tmp_path, monkeypatch) -> None:
+    from app.services import env_service as env_service_module
+
+    env_path = tmp_path / '.env'
+    write_env(env_path, {'OPENAI_API_KEY': 'old-secret'})
+
+    monkeypatch.setattr(env_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.put('/api/agents/default/env/ANTHROPIC_API_KEY', json={'value': 'new-anthropic-secret'})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['agent_id'] == 'default'
+    assert payload['key'] == 'ANTHROPIC_API_KEY'
+    assert payload['is_set'] is True
+    assert payload['redacted_preview'].startswith('***')
+    assert payload['message'] == 'Environment variable updated'
+    env_contents = env_path.read_text(encoding='utf-8')
+    assert 'ANTHROPIC_API_KEY=new-anthropic-secret' in env_contents
+
+
+def test_agent_env_delete_endpoint_removes_single_key(tmp_path, monkeypatch) -> None:
+    from app.services import env_service as env_service_module
+
+    env_path = tmp_path / '.env'
+    write_env(
+        env_path,
+        {
+            'OPENAI_API_KEY': 'old-secret',
+            'ANTHROPIC_API_KEY': 'delete-me',
+        },
+    )
+
+    monkeypatch.setattr(env_service_module, 'ensure_profile_exists', lambda profile: SimpleNamespace(home=tmp_path))
+    monkeypatch.setattr('app.main.ensure_profile_exists', lambda agent_id: object())
+
+    response = client.delete('/api/agents/default/env/ANTHROPIC_API_KEY')
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload['agent_id'] == 'default'
+    assert payload['key'] == 'ANTHROPIC_API_KEY'
+    assert payload['is_set'] is False
+    assert payload['redacted_preview'] is None
+    assert payload['message'] == 'Environment variable deleted'
+    env_contents = env_path.read_text(encoding='utf-8')
+    assert 'ANTHROPIC_API_KEY=delete-me' not in env_contents
+    assert 'OPENAI_API_KEY=old-secret' in env_contents

@@ -20,7 +20,9 @@ from app.models import (
     AgentCronJobPatchRequest,
     AgentCronJobsResponse,
     AgentDefaults,
+    AgentEnvMutationResponse,
     AgentEnvResponse,
+    AgentEnvUpdateRequest,
     AgentFiles,
     AgentMemoryProvidersResponse,
     AgentMemoryResponse,
@@ -649,6 +651,18 @@ def get_agent_config(agent_id: str) -> AgentConfigResponse:
 def get_agent_env(agent_id: str) -> AgentEnvResponse:
     ensure_profile_exists(agent_id)
     return env_service.get_agent_env(agent_id)
+
+
+@app.put('/api/agents/{agent_id}/env/{key}', response_model=AgentEnvMutationResponse, tags=['config'])
+def put_agent_env(agent_id: str, key: str, payload: AgentEnvUpdateRequest) -> AgentEnvMutationResponse:
+    ensure_profile_exists(agent_id)
+    return env_service.set_agent_env(agent_id, key, payload.value)
+
+
+@app.delete('/api/agents/{agent_id}/env/{key}', response_model=AgentEnvMutationResponse, tags=['config'])
+def delete_agent_env(agent_id: str, key: str) -> AgentEnvMutationResponse:
+    ensure_profile_exists(agent_id)
+    return env_service.delete_agent_env(agent_id, key)
 
 
 @app.get('/api/agents/{agent_id}/config/schema', response_model=AgentConfigSchemaResponse, tags=['config'])
