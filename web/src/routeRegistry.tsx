@@ -95,6 +95,29 @@ const groupLabels: Record<RouteGroup, string> = {
 
 const manifestRoutes = routeManifest.routes as ManifestRoute[]
 
+export const missingComponentKeys = manifestRoutes.filter((route) => !(route.key in componentByKey)).map((route) => route.key)
+export const missingIconKeys = manifestRoutes
+  .filter((route) => route.key !== 'overview' && !(route.key in iconByKey))
+  .map((route) => route.key)
+
+export function assertRouteRegistryCoverage(): void {
+  const problems: string[] = []
+
+  if (missingComponentKeys.length) {
+    problems.push(`missing component mappings for: ${missingComponentKeys.join(', ')}`)
+  }
+
+  if (missingIconKeys.length) {
+    problems.push(`missing icon mappings for: ${missingIconKeys.join(', ')}`)
+  }
+
+  if (problems.length) {
+    throw new Error(`route manifest coverage failed: ${problems.join('; ')}`)
+  }
+}
+
+assertRouteRegistryCoverage()
+
 export const dashboardRoutes: DashboardRoute[] = manifestRoutes.map((route) => ({
   ...route,
   icon: iconByKey[route.key],
