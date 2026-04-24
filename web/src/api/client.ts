@@ -3,6 +3,9 @@ import {
   mockAgentConfigSchema,
   mockConfigReload,
   mockConfigValidation,
+  mockAgentEnv,
+  mockAgentEnvMutation,
+  mockSystemEnvCatalog,
   mockAgentSecurity,
   mockApprovals,
   mockCheckpoints,
@@ -41,6 +44,8 @@ import type {
   AgentConfigReloadRecord,
   AgentConfigSchemaRecord,
   AgentConfigValidationRecord,
+  AgentEnvMutationRecord,
+  AgentEnvRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApiResult,
@@ -71,6 +76,7 @@ import type {
   SkillBroadcastPayload,
   SystemAllowlistsRecord,
   SystemDoctorRecord,
+  SystemEnvCatalogRecord,
   SystemGatewayRecord,
   SystemHealthRecord,
   SystemMemoryProfileRecord,
@@ -389,6 +395,41 @@ type BackendAgentConfigReloadResponse = {
   agent_id: string
   path: string
   reloaded: boolean
+  message: string
+}
+
+type BackendEnvVariable = {
+  key: string
+  category: string
+  description: string
+  sensitive: boolean
+  docs_url?: string | null
+  impact: string
+  is_set: boolean
+  redacted_preview?: string | null
+}
+
+type BackendSystemEnvCatalogResponse = {
+  categories: Array<{
+    key: string
+    label: string
+    variables: BackendEnvVariable[]
+  }>
+  total_count: number
+}
+
+type BackendAgentEnvResponse = {
+  agent_id: string
+  path: string
+  variables: BackendEnvVariable[]
+}
+
+type BackendAgentEnvMutationResponse = {
+  agent_id: string
+  path: string
+  key: string
+  is_set: boolean
+  redacted_preview?: string | null
   message: string
 }
 
@@ -923,6 +964,41 @@ const normalizeConfigReload = (payload: BackendAgentConfigReloadResponse): Agent
   agentId: payload.agent_id,
   path: payload.path,
   reloaded: payload.reloaded,
+  message: payload.message,
+})
+
+const normalizeEnvVariable = (payload: BackendEnvVariable): import('../types').EnvVariableRecord => ({
+  key: payload.key,
+  category: payload.category,
+  description: payload.description,
+  sensitive: payload.sensitive,
+  docsUrl: payload.docs_url ?? undefined,
+  impact: payload.impact,
+  isSet: payload.is_set,
+  redactedPreview: payload.redacted_preview ?? null,
+})
+
+const normalizeSystemEnvCatalog = (payload: BackendSystemEnvCatalogResponse): SystemEnvCatalogRecord => ({
+  categories: payload.categories.map((category) => ({
+    key: category.key,
+    label: category.label,
+    variables: category.variables.map(normalizeEnvVariable),
+  })),
+  totalCount: payload.total_count,
+})
+
+const normalizeAgentEnv = (payload: BackendAgentEnvResponse): AgentEnvRecord => ({
+  agentId: payload.agent_id,
+  path: payload.path,
+  variables: payload.variables.map(normalizeEnvVariable),
+})
+
+const normalizeAgentEnvMutation = (payload: BackendAgentEnvMutationResponse): AgentEnvMutationRecord => ({
+  agentId: payload.agent_id,
+  path: payload.path,
+  key: payload.key,
+  isSet: payload.is_set,
+  redactedPreview: payload.redacted_preview ?? null,
   message: payload.message,
 })
 
@@ -1467,6 +1543,35 @@ export const apiClient = {
       agentId: profileId,
       path: `/opt/data/hermes/profiles/${profileId}/config.yaml`,
     })),
+
+  getSystemEnvCatalog: async (): Promise<ApiResult<SystemEnvCatalogRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendSystemEnvCatalogResponse>('/system/env/catalog')
+      return normalizeSystemEnvCatalog(payload)
+    }, () => structuredClone(mockSystemEnvCatalog)),
+
+  getAgentEnv: async (profileId: string): Promise<ApiResult<AgentEnvRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentEnvResponse>(`/agents/${encodeURIComponent(profileId)}/env`)
+      return normalizeAgentEnv(payload)
+    }, () => ({ ...structuredClone(mockAgentEnv), agentId: profileId, path: `/opt/data/hermes/profiles/${profileId}/.env` })),
+
+  setAgentEnv: async (profileId: string, key: string, value: string): Promise<ApiResult<AgentEnvMutationRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentEnvMutationResponse>(`/agents/${encodeURIComponent(profileId)}/env/${encodeURIComponent(key)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ value }),
+      })
+      return normalizeAgentEnvMutation(payload)
+    }, () => ({ ...structuredClone(mockAgentEnvMutation), agentId: profileId, key, isSet: true })),
+
+  deleteAgentEnv: async (profileId: string, key: string): Promise<ApiResult<AgentEnvMutationRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendAgentEnvMutationResponse>(`/agents/${encodeURIComponent(profileId)}/env/${encodeURIComponent(key)}`, {
+        method: 'DELETE',
+      })
+      return normalizeAgentEnvMutation(payload)
+    }, () => ({ ...structuredClone(mockAgentEnvMutation), agentId: profileId, key, isSet: false, redactedPreview: undefined, message: 'Environment variable deleted' })),
 
   getProviders: async (): Promise<ApiResult<ProviderCatalogRecord[]>> =>
     withFallback(async () => {

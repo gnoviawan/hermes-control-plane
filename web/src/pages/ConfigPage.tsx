@@ -1,5 +1,5 @@
 import { Alert, Button, Card, Col, Input, List, Row, Select, Space, Switch, Tag, Typography } from 'antd'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { apiClient } from '../api/client'
 import { useApiQuery } from '../api/hooks'
 import { PageHeader } from '../components/PageHeader'
@@ -9,6 +9,8 @@ import type {
   AgentConfigRecord,
   AgentConfigSchemaRecord,
   AgentConfigValidationRecord,
+  AgentEnvRecord,
+  SystemEnvCatalogRecord,
 } from '../types'
 
 const statusColorMap: Record<AgentConfigFieldRecord['status'], string> = {
@@ -58,25 +60,43 @@ export function ConfigPage() {
     error: schemaError,
     refresh: refreshSchema,
   } = useApiQuery<AgentConfigSchemaRecord>(() => apiClient.getAgentConfigSchema(profileId), [profileId, 'schema'])
+  const {
+    data: systemEnvCatalog,
+    isLoading: envCatalogLoading,
+    refresh: refreshEnvCatalog,
+  } = useApiQuery<SystemEnvCatalogRecord>(() => apiClient.getSystemEnvCatalog(), ['system-env-catalog'])
+  const {
+    data: agentEnvState,
+    isLoading: agentEnvLoading,
+    refresh: refreshAgentEnv,
+  } = useApiQuery<AgentEnvRecord>(() => apiClient.getAgentEnv(profileId), [profileId, 'agent-env'])
 
   const [draftValues, setDraftValues] = useState<Record<string, unknown>>({})
   const [validationPreview, setValidationPreview] = useState<AgentConfigValidationRecord | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [envDraftValues, setEnvDraftValues] = useState<Record<string, string>>({})
 
   const effectiveMock = isMock || schemaMock
   const effectiveError = error ?? schemaError
 
-  const pendingChanges = Object.entries(draftValues).map(([key, value]) => ({
-    key,
-    value,
-  }))
+  const pendingChanges = Object.entries(draftValues).map(([key, value]) => ({ key, value }))
 
   const summaryStats = [
     { label: 'Editable', value: schema?.editableCount ?? data?.editableFields.length ?? 0 },
     { label: 'Deferred', value: schema?.deferredCount ?? data?.deferredFields.length ?? 0 },
     { label: 'Forbidden', value: schema?.forbiddenCount ?? 0 },
   ]
+
+  const envRows = useMemo(() => {
+    const liveRecords = new Map((agentEnvState?.variables ?? []).map((record) => [record.key, record]))
+    return (systemEnvCatalog?.categories ?? []).flatMap((category) =>
+      category.variables.map((variable) => ({
+        ...variable,
+        live: liveRecords.get(variable.key),
+      })),
+    )
+  }, [agentEnvState?.variables, systemEnvCatalog?.categories])
 
   const setFieldValue = (fieldKey: string, value: unknown) => {
     setDraftValues((current) => ({ ...current, [fieldKey]: value }))
@@ -125,6 +145,41 @@ export function ConfigPage() {
     }
   }
 
+  const saveEnvKey = async (key: string) => {
+    const value = envDraftValues[key] ?? ''
+    setIsSubmitting(true)
+    try {
+      const result = await apiClient.setAgentEnv(profileId, key, value)
+      setActionMessage(result.data.message)
+      setEnvDraftValues((current) => {
+        const next = { ...current }
+        delete next[key]
+        return next
+      })
+      refreshEnvCatalog()
+      refreshAgentEnv()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const deleteEnvKey = async (key: string) => {
+    setIsSubmitting(true)
+    try {
+      const result = await apiClient.deleteAgentEnv(profileId, key)
+      setActionMessage(result.data.message)
+      setEnvDraftValues((current) => {
+        const next = { ...current }
+        delete next[key]
+        return next
+      })
+      refreshEnvCatalog()
+      refreshAgentEnv()
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const renderFieldControl = (field: AgentConfigFieldRecord) => {
     const disabled = field.status !== 'editable'
     const currentValue = getFieldValue(field)
@@ -152,12 +207,14 @@ export function ConfigPage() {
     <div className="page-stack">
       <PageHeader
         title="Config"
-        description="Schema-driven config editor with validation preview, dirty-state tracking, save flow, and reload controls for the active Hermes profile."
+        description="Schema-driven config editor with validation preview, save flow, reload controls, and Env & API Keys operations for the active Hermes profile."
         mock={effectiveMock}
         error={effectiveError}
         onRefresh={() => {
           refresh()
           refreshSchema()
+          refreshEnvCatalog()
+          refreshAgentEnv()
         }}
       />
 
@@ -202,15 +259,8 @@ export function ConfigPage() {
         }
       >
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
-          <Typography.Text type="secondary">
-            Pending changes: {pendingChanges.length}
-          </Typography.Text>
-          <List
-            size="small"
-            dataSource={pendingChanges}
-            locale={{ emptyText: 'No unsaved config changes.' }}
-            renderItem={(item) => <List.Item>{item.key}: {String(item.value)}</List.Item>}
-          />
+          <Typography.Text type="secondary">Pending changes: {pendingChanges.length}</Typography.Text>
+          <List size="small" dataSource={pendingChanges} locale={{ emptyText: 'No unsaved config changes.' }} renderItem={(item) => <List.Item>{item.key}: {String(item.value)}</List.Item>} />
           {validationPreview ? (
             <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Space wrap>
@@ -223,6 +273,25 @@ export function ConfigPage() {
               {validationPreview.warnings.length > 0 ? <Alert type="warning" showIcon message={validationPreview.warnings.join(' | ')} /> : null}
             </Space>
           ) : null}
+        </Space>
+      </Card>
+
+      <Card className="glass-panel qwen-section-card" title="Env & API Keys" loading={envCatalogLoading || agentEnvLoading}>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Typography.Text type="secondary">Manage masked environment-backed credentials and platform tokens for this profile.</Typography.Text>
+          {envRows.map((record) => (
+            <Card key={record.key} type="inner" title={record.key} extra={<Space><Tag>{record.category}</Tag><Tag>{record.impact}</Tag>{record.live?.isSet ? <Tag color="green">set</Tag> : <Tag>unset</Tag>}</Space>}>
+              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                <Typography.Text type="secondary">{record.description}</Typography.Text>
+                <Typography.Text type="secondary">Preview: {record.live?.redactedPreview ?? 'not set'}</Typography.Text>
+                <Input.Password value={envDraftValues[record.key] ?? ''} onChange={(event) => setEnvDraftValues((current) => ({ ...current, [record.key]: event.target.value }))} placeholder={`Set ${record.key}`} />
+                <Space wrap>
+                  <Button type="primary" onClick={() => saveEnvKey(record.key)} disabled={isSubmitting}>Save key</Button>
+                  <Button danger onClick={() => deleteEnvKey(record.key)} disabled={isSubmitting}>Delete key</Button>
+                </Space>
+              </Space>
+            </Card>
+          ))}
         </Space>
       </Card>
 
@@ -248,9 +317,7 @@ export function ConfigPage() {
                             <Tag>{field.type}</Tag>
                           </Space>
                         </Space>
-                        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 12 }}>
-                          {field.description}
-                        </Typography.Paragraph>
+                        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 12 }}>{field.description}</Typography.Paragraph>
                         {renderFieldControl(field)}
                       </div>
                     ))}

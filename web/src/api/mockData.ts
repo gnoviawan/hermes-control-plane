@@ -3,6 +3,8 @@ import type {
   AgentConfigReloadRecord,
   AgentConfigSchemaRecord,
   AgentConfigValidationRecord,
+  AgentEnvMutationRecord,
+  AgentEnvRecord,
   AgentDiagnosticsRecord,
   AgentSecurityRecord,
   ApprovalRecord,
@@ -24,6 +26,7 @@ import type {
   SessionRecord,
   Skill,
   SystemAllowlistsRecord,
+  SystemEnvCatalogRecord,
   SystemGatewayRecord,
   SystemHealthRecord,
   SystemDoctorRecord,
@@ -438,6 +441,42 @@ export const mockConfigReload: AgentConfigReloadRecord = {
   path: '/opt/data/hermes/profiles/default/config.yaml',
   reloaded: true,
   message: 'Config reload requested',
+}
+
+export const mockSystemEnvCatalog: SystemEnvCatalogRecord = {
+  totalCount: 5,
+  categories: [
+    {
+      key: 'providers',
+      label: 'Providers',
+      variables: [
+        { key: 'OPENAI_API_KEY', category: 'providers', description: 'API key for OpenAI-compatible provider access.', sensitive: true, docsUrl: 'https://docs.hermes-agent.dev/reference/environment-variables', impact: 'restart', isSet: true, redactedPreview: '***7890' },
+        { key: 'ANTHROPIC_API_KEY', category: 'providers', description: 'API key for Anthropic provider access.', sensitive: true, docsUrl: 'https://docs.hermes-agent.dev/reference/environment-variables', impact: 'restart', isSet: false, redactedPreview: null },
+      ],
+    },
+    {
+      key: 'gateway_messaging',
+      label: 'Gateway & Messaging',
+      variables: [
+        { key: 'DISCORD_TOKEN', category: 'gateway_messaging', description: 'Discord bot token for gateway connectivity.', sensitive: true, docsUrl: 'https://docs.hermes-agent.dev/reference/environment-variables', impact: 'restart', isSet: true, redactedPreview: '***cdef' },
+      ],
+    },
+  ],
+}
+
+export const mockAgentEnv: AgentEnvRecord = {
+  agentId: 'default',
+  path: '/opt/data/hermes/profiles/default/.env',
+  variables: mockSystemEnvCatalog.categories.flatMap((category) => category.variables),
+}
+
+export const mockAgentEnvMutation: AgentEnvMutationRecord = {
+  agentId: 'default',
+  path: '/opt/data/hermes/profiles/default/.env',
+  key: 'ANTHROPIC_API_KEY',
+  isSet: true,
+  redactedPreview: '***cret',
+  message: 'Environment variable updated',
 }
 
 export const mockProviders: ProviderCatalogRecord[] = [
