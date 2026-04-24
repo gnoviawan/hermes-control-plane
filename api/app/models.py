@@ -453,6 +453,19 @@ class AgentEnvResponse(BaseModel):
     variables: list[EnvVariableRecord] = Field(default_factory=list)
 
 
+class AgentEnvUpdateRequest(BaseModel):
+    value: str
+
+
+class AgentEnvMutationResponse(BaseModel):
+    agent_id: str
+    path: str
+    key: str
+    is_set: bool
+    redacted_preview: str | None = None
+    message: str
+
+
 class ProviderCatalogItem(BaseModel):
     name: str
     config: dict[str, Any]
