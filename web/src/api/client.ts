@@ -4,6 +4,7 @@ import {
   mockApprovals,
   mockCronJobs,
   mockLogs,
+  mockMcpServers,
   mockModels,
   mockOverview,
   mockProfiles,
@@ -26,6 +27,7 @@ import type {
   CreateProfilePayload,
   CronJob,
   LogEntry,
+  McpServerRecord,
   ModelCatalogRecord,
   OverviewResponse,
   Profile,
@@ -267,6 +269,23 @@ type BackendToolsResponse = {
     available: boolean
     availability_reason?: string | null
     schema_summary: Record<string, unknown>
+  }>
+  total: number
+}
+
+type BackendMcpServersResponse = {
+  agent_id?: string
+  servers: Array<{
+    id: string
+    name: string
+    transport: 'stdio' | 'http'
+    enabled: boolean
+    connection_state: string
+    auth_state: string
+    discovered_tools_count: number
+    last_reload_at?: string | null
+    sampling_enabled: boolean
+    profiles?: string[]
   }>
   total: number
 }
@@ -546,6 +565,20 @@ const normalizeTools = (payload: BackendToolsResponse): ToolRecord[] =>
     available: tool.available,
     availabilityReason: tool.availability_reason ?? undefined,
     schemaSummary: tool.schema_summary,
+  }))
+
+const normalizeMcpServers = (payload: BackendMcpServersResponse): McpServerRecord[] =>
+  payload.servers.map((server) => ({
+    id: server.id,
+    name: server.name,
+    transport: server.transport,
+    enabled: server.enabled,
+    connectionState: server.connection_state,
+    authState: server.auth_state,
+    discoveredToolsCount: server.discovered_tools_count,
+    lastReloadAt: server.last_reload_at ?? undefined,
+    samplingEnabled: server.sampling_enabled,
+    profiles: server.profiles ?? (payload.agent_id ? [payload.agent_id] : []),
   }))
 
 const normalizeApprovals = (payload: BackendApprovalsResponse): ApprovalRecord[] =>
@@ -910,6 +943,43 @@ export const apiClient = {
       const payload = await fetchJson<BackendToolsResponse>(`/agents/${encodeURIComponent(profileId)}/tools`)
       return normalizeTools(payload)
     }, () => structuredClone(mockTools)),
+
+  getAgentMcpServers: async (profileId: string): Promise<ApiResult<McpServerRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendMcpServersResponse>(`/agents/${encodeURIComponent(profileId)}/mcp/servers`)
+      return normalizeMcpServers(payload)
+    }, () => structuredClone(mockMcpServers).filter((server) => server.profiles.includes(profileId))),
+
+  getAgentMcpTools: async (profileId: string): Promise<ApiResult<ToolRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendToolsResponse>(`/agents/${encodeURIComponent(profileId)}/mcp/tools`)
+      return normalizeTools(payload)
+    }, () => structuredClone(mockTools).filter((tool) => tool.sourceType === 'mcp')),
+
+  getSystemMcpServers: async (): Promise<ApiResult<McpServerRecord[]>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendMcpServersResponse>('/system/mcp/servers')
+      return normalizeMcpServers(payload)
+    }, () => structuredClone(mockMcpServers)),
+
+  reloadAgentMcpServers: async (profileId: string): Promise<ApiResult<{ reloaded: boolean; serverCount: number; message: string }>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<{ reloaded: boolean; server_count: number; message: string }>(`/agents/${encodeURIComponent(profileId)}/mcp/reload`, {
+        method: 'POST',
+      })
+      return { reloaded: payload.reloaded, serverCount: payload.server_count, message: payload.message }
+    }, () => ({ reloaded: true, serverCount: structuredClone(mockMcpServers).filter((server) => server.profiles.includes(profileId)).length, message: `Reloaded MCP server definitions for ${profileId}.` })),
+
+  setAgentMcpConnection: async (profileId: string, serverId: string, connected: boolean): Promise<ApiResult<McpServerRecord>> =>
+    withFallback(async () => {
+      const payload = await fetchJson<BackendMcpServersResponse['servers'][number]>(`/agents/${encodeURIComponent(profileId)}/mcp/${encodeURIComponent(serverId)}/${connected ? 'connect' : 'disconnect'}`, {
+        method: 'POST',
+      })
+      return normalizeMcpServers({ agent_id: profileId, servers: [payload], total: 1 })[0]
+    }, () => {
+      const base = structuredClone(mockMcpServers).find((server) => server.id === serverId) ?? structuredClone(mockMcpServers)[0]
+      return { ...base, connectionState: connected ? 'connected' : 'disconnected' }
+    }),
 
   getAgentApprovals: async (profileId: string): Promise<ApiResult<ApprovalRecord[]>> =>
     withFallback(async () => {

@@ -4,6 +4,7 @@ import type {
   ApprovalRecord,
   CronJob,
   LogEntry,
+  McpServerRecord,
   ModelCatalogRecord,
   OverviewResponse,
   Profile,
@@ -332,19 +333,19 @@ export const mockToolsets: ToolsetRecord[] = [
 
 export const mockTools: ToolRecord[] = [
   {
-    name: 'browser_navigate',
-    toolset: 'browser',
+    name: 'terminal',
+    toolset: 'hermes-cli',
     sourceType: 'builtin',
-    sourceId: 'browser',
+    sourceId: 'hermes-cli',
     available: true,
     availabilityReason: 'Enabled by configured toolset',
     schemaSummary: { type: 'builtin' },
   },
   {
-    name: 'terminal',
-    toolset: 'hermes-cli',
+    name: 'browser_navigate',
+    toolset: 'browser',
     sourceType: 'builtin',
-    sourceId: 'hermes-cli',
+    sourceId: 'browser',
     available: true,
     availabilityReason: 'Enabled by configured toolset',
     schemaSummary: { type: 'builtin' },
@@ -356,7 +357,34 @@ export const mockTools: ToolRecord[] = [
     sourceId: 'mempalace',
     available: true,
     availabilityReason: 'MCP server configured',
-    schemaSummary: { type: 'mcp' },
+    schemaSummary: { type: 'mcp', transport: 'stdio' },
+  },
+]
+
+export const mockMcpServers: McpServerRecord[] = [
+  {
+    id: 'mempalace',
+    name: 'mempalace',
+    transport: 'stdio',
+    enabled: true,
+    connectionState: 'connected',
+    authState: 'configured',
+    discoveredToolsCount: 1,
+    lastReloadAt: '2026-04-24T03:30:00Z',
+    samplingEnabled: false,
+    profiles: ['default', 'ops'],
+  },
+  {
+    id: 'notion',
+    name: 'notion',
+    transport: 'http',
+    enabled: true,
+    connectionState: 'configured',
+    authState: 'configured',
+    discoveredToolsCount: 1,
+    lastReloadAt: '2026-04-24T03:20:00Z',
+    samplingEnabled: true,
+    profiles: ['default'],
   },
 ]
 

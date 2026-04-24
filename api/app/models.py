@@ -385,6 +385,37 @@ class ToolCatalogResponse(BaseModel):
     total: int
 
 
+class McpServerInfo(BaseModel):
+    id: str
+    name: str
+    transport: str
+    enabled: bool = True
+    connection_state: str = 'configured'
+    auth_state: str = 'none'
+    discovered_tools_count: int = 0
+    last_reload_at: str | None = None
+    sampling_enabled: bool = True
+    profiles: list[str] = Field(default_factory=list)
+
+
+class AgentMcpServersResponse(BaseModel):
+    agent_id: str
+    servers: list[McpServerInfo]
+    total: int
+
+
+class SystemMcpServersResponse(BaseModel):
+    servers: list[McpServerInfo]
+    total: int
+
+
+class McpReloadResponse(BaseModel):
+    agent_id: str
+    reloaded: bool
+    server_count: int
+    message: str
+
+
 class ApprovalRequest(BaseModel):
     id: str
     agent_id: str
