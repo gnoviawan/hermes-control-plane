@@ -18,6 +18,7 @@ import type { MenuProps } from 'antd'
 import type { ComponentType, LazyExoticComponent, ReactNode } from 'react'
 import { lazy } from 'react'
 import routeManifest from '../route-manifest.json'
+import { allowedRouteGroups, collectRouteManifestProblems } from './routeManifestValidator'
 
 const ConfigPage = lazy(() => import('./pages/ConfigPage').then((module) => ({ default: module.ConfigPage })))
 const ConsolePage = lazy(() => import('./pages/ConsolePage').then((module) => ({ default: module.ConsolePage })))
@@ -38,14 +39,14 @@ const WorkspacePage = lazy(() => import('./pages/WorkspacePage').then((module) =
 
 type RouteGroup = 'control-group' | 'settings-group'
 
-const allowedRouteGroups: RouteGroup[] = ['control-group', 'settings-group']
-
 type ManifestRoute = {
   key: string
   path: string
   label: string
   group: RouteGroup
 }
+
+export const registryAllowedRouteGroups = allowedRouteGroups
 
 type DashboardRoute = ManifestRoute & {
   icon?: ReactNode
@@ -97,42 +98,16 @@ const groupLabels: Record<RouteGroup, string> = {
 
 const manifestRoutes = routeManifest.routes as ManifestRoute[]
 
-const countDuplicates = (values: string[]): string[] =>
-  values.filter((value, index) => values.indexOf(value) !== index).filter((value, index, items) => items.indexOf(value) === index)
+const { duplicateRouteKeys, duplicateRoutePaths, invalidRouteGroups, missingComponentKeys, missingIconKeys, problems: manifestProblems } = collectRouteManifestProblems({
+  manifestRoutes,
+  componentKeys: Object.keys(componentByKey),
+  iconKeys: Object.keys(iconByKey),
+})
 
-export const duplicateRouteKeys = countDuplicates(manifestRoutes.map((route) => route.key))
-export const duplicateRoutePaths = countDuplicates(manifestRoutes.map((route) => route.path))
-export const invalidRouteGroups = manifestRoutes
-  .map((route) => route.group)
-  .filter((group, index, groups) => !allowedRouteGroups.includes(group) && groups.indexOf(group) === index)
-
-export const missingComponentKeys = manifestRoutes.filter((route) => !(route.key in componentByKey)).map((route) => route.key)
-export const missingIconKeys = manifestRoutes
-  .filter((route) => route.key !== 'overview' && !(route.key in iconByKey))
-  .map((route) => route.key)
+export { duplicateRouteKeys, duplicateRoutePaths, invalidRouteGroups, missingComponentKeys, missingIconKeys }
 
 export function assertRouteRegistryCoverage(): void {
-  const problems: string[] = []
-
-  if (duplicateRouteKeys.length) {
-    problems.push(`duplicate route keys: ${duplicateRouteKeys.join(', ')}`)
-  }
-
-  if (duplicateRoutePaths.length) {
-    problems.push(`duplicate route paths: ${duplicateRoutePaths.join(', ')}`)
-  }
-
-  if (invalidRouteGroups.length) {
-    problems.push(`invalid route groups: ${invalidRouteGroups.join(', ')}`)
-  }
-
-  if (missingComponentKeys.length) {
-    problems.push(`missing component mappings for: ${missingComponentKeys.join(', ')}`)
-  }
-
-  if (missingIconKeys.length) {
-    problems.push(`missing icon mappings for: ${missingIconKeys.join(', ')}`)
-  }
+  const problems: string[] = [...manifestProblems]
 
   if (problems.length) {
     throw new Error(`route manifest coverage failed: ${problems.join('; ')}`)
